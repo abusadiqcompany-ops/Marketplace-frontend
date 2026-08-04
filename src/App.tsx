@@ -48,6 +48,7 @@ import { NewListingRoute as NewListingRouteComponent } from './components/NewLis
 import { NotificationCard } from './components/NotificationCard';
 import { MarketplaceShell } from './components/MarketplaceShell';
 import { AuthPage } from './components/AuthPage';
+import { LandingPage } from './components/LandingPage';
 
 interface ChatConversation {
   chatId?: string;
@@ -184,8 +185,8 @@ function MarketConnectApp() {
   const LOGIN_PATH = '/login';
 
   useEffect(() => {
-    if (!currentUser && location.pathname !== LOGIN_PATH) {
-      navigate(LOGIN_PATH, { replace: true });
+    if (!currentUser && location.pathname !== LOGIN_PATH && location.pathname !== '/') {
+      navigate('/', { replace: true });
       return;
     }
 
@@ -2665,10 +2666,6 @@ function MarketConnectApp() {
     navigate(path);
   };
 
-  if (!currentUser && location.pathname !== LOGIN_PATH) {
-    return <Navigate to={LOGIN_PATH} replace />;
-  }
-
   if (!currentUser && location.pathname === LOGIN_PATH) {
     return (
       <AuthPage
@@ -2692,6 +2689,18 @@ function MarketConnectApp() {
         onRegisterFieldChange={(field, value) => setRegisterForm(prev => ({ ...prev, [field]: value as never }))}
         onTogglePasswordVisibility={() => setShowRegisterPassword((prev) => !prev)}
         onSwitchMode={(mode) => setAuthMode(mode)}
+      />
+    );
+  }
+
+  if (!currentUser && location.pathname === '/') {
+    return (
+      <LandingPage
+        onSignIn={() => navigate(LOGIN_PATH)}
+        onCreateAccount={() => {
+          setAuthMode('register');
+          navigate(LOGIN_PATH);
+        }}
       />
     );
   }
