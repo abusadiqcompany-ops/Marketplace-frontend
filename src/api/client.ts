@@ -1,12 +1,28 @@
 import axios, { AxiosInstance } from 'axios';
 
+const normalizeApiUrl = (url: string): string => {
+  const trimmed = url.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  const noTrailingSlash = trimmed.replace(/\/$/, '');
+  if (/^https?:\/\//i.test(noTrailingSlash)) {
+    return noTrailingSlash;
+  }
+
+  // If the URL was provided without protocol, assume https.
+  const withoutLeadingSlash = noTrailingSlash.replace(/^\/+/, '');
+  return `https://${withoutLeadingSlash}`;
+};
+
 const resolveApiBaseUrl = () => {
   const rawUrl = import.meta.env.VITE_API_URL?.toString().trim();
   if (!rawUrl) {
     return '/api';
   }
 
-  const normalized = rawUrl.replace(/\/$/, '');
+  const normalized = normalizeApiUrl(rawUrl);
   const resolved = normalized.endsWith('/api') ? normalized : `${normalized}/api`;
 
   if (!(resolveApiBaseUrl as any)._loggedApiBaseUrl) {
