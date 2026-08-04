@@ -1,6 +1,23 @@
 import axios, { AxiosInstance } from 'axios';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+const resolveApiBaseUrl = () => {
+  const rawUrl = import.meta.env.VITE_API_URL?.toString().trim();
+  if (!rawUrl) {
+    return '/api';
+  }
+
+  const normalized = rawUrl.replace(/\/$/, '');
+  const resolved = normalized.endsWith('/api') ? normalized : `${normalized}/api`;
+
+  if (!(resolveApiBaseUrl as any)._loggedApiBaseUrl) {
+    console.info('[api/client] Resolved API_BASE_URL:', resolved);
+    (resolveApiBaseUrl as any)._loggedApiBaseUrl = true;
+  }
+
+  return resolved;
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -55,7 +72,7 @@ api.interceptors.response.use(
 
       if (isRefreshing) {
         // Queue the request until token is refreshed
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve, _reject) => {
           subscribeTokenRefresh((token: string) => {
             originalRequest.headers.Authorization = `Bearer ${token}`;
             resolve(api(originalRequest));
