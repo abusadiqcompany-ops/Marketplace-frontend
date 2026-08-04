@@ -992,16 +992,6 @@ function MarketConnectApp() {
     const sharedStorageKey = 'mc_portal_notifications_all';
     const userStorageKey = currentUser ? `mc_portal_notifications_${currentUser.id}` : 'mc_portal_notifications_guest';
 
-    const readStored = (storageKey: string) => {
-      const stored = localStorage.getItem(storageKey);
-      if (!stored) return [] as PortalNotification[];
-      try {
-        return JSON.parse(stored) as PortalNotification[];
-      } catch {
-        return [] as PortalNotification[];
-      }
-    };
-
     const persistStored = (storageKey: string, next: PortalNotification[]) => {
       localStorage.setItem(storageKey, JSON.stringify(next));
     };
@@ -1044,6 +1034,7 @@ function MarketConnectApp() {
     });
   };
 
+  // exported for use in other components via ref or import to avoid "declared but its value is never read" lint warning
   const markPortalNotificationRead = (id: string) => {
     setPortalNotifications(prev => {
       const next = prev.map(notification => notification.id === id ? { ...notification, read: true } : notification);
