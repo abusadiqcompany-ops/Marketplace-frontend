@@ -10,7 +10,7 @@ export function LandingPage({ onSignIn, onCreateAccount }: LandingPageProps) {
   return (
     <div className="min-h-screen h-screen overflow-hidden bg-black text-white">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_#0b0f1a_0%,_#0b0f1a_36%,_black_100%)]" />
-      <div className="relative flex min-h-screen flex-col items-center justify-start px-4 pt-[56vh] sm:pt-[50vh] md:justify-center md:pt-0">
+      <div className="relative flex min-h-screen flex-col items-center justify-center px-4 py-10 sm:py-16">
         <div className="w-full max-w-sm rounded-[32px] border border-white/10 bg-white/5 backdrop-blur-3xl shadow-[0_40px_90px_rgba(0,0,0,0.45)] sm:shadow-[0_48px_100px_rgba(0,0,0,0.5)] text-center mx-auto">
           <div className="relative mx-auto mb-2 h-24 w-24">
             <span className="absolute inset-0 rounded-[28px] bg-[radial-gradient(circle,_rgba(56,189,248,0.24),_rgba(11,15,26,0.08),_transparent_70%)] blur-xl" />
