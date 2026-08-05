@@ -75,15 +75,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
           id: p?.id || currentUser?.id,
           role: p?.role || currentUser?.role,
         });
-      } catch (e) {
-        console.warn('Profile data unavailable, using local fallback profile.', e);
+      } catch (e: any) {
+        console.warn('Profile data unavailable, using local fallback profile.', e?.message || String(e));
         setProfile(fallbackProfile);
       }
       try {
         const s = await getProfileStats();
         setStats(s);
-      } catch (e) {
-        console.warn('Profile stats unavailable.', e);
+      } catch (e: any) {
+        console.warn('Profile stats unavailable.', e?.message || String(e));
       }
       setLoading(false);
     };
@@ -153,7 +153,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
       setDirty(false);
       setTimeout(() => setSavedMessage(''), 2200);
     } catch (e: any) {
-      console.error(e);
+      console.error(e?.message || e);
       setSavedMessage('Error saving changes');
       setTimeout(() => setSavedMessage(''), 3000);
     } finally {
@@ -193,7 +193,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
       setSavedMessage('✅ Avatar updated');
       setTimeout(() => setSavedMessage(''), 2200);
     } catch (err: any) {
-      console.error(err);
+      console.error(err?.message || err);
       setSavedMessage(err?.response?.data?.error || 'Unable to upload profile photo.');
       setTimeout(() => setSavedMessage(''), 3000);
     } finally {
