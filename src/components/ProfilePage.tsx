@@ -338,16 +338,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
                   {NIGERIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
-              {isSeller && (
-                <div>
-                  <label htmlFor="sellerLocation" className="text-sm text-slate-600">Seller Location</label>
-                  <select id="sellerLocation" name="sellerLocation" value={formatLocationValue(profile.sellerLocation)} onChange={e => onFieldChange('sellerLocation', e.target.value)} className="w-full mt-2 p-3 rounded-lg bg-[#fafafa] border border-[#e8e8e8]">
-                    <option value="">Select state</option>
-                    {NIGERIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              )}
-
               <div>
                 <button onClick={onSave} disabled={!dirty || saving} className={`w-full p-3 rounded-lg text-white font-semibold ${dirty ? 'bg-gradient-to-r from-[#2f6936] to-[#3a7d44]' : 'bg-slate-300'}`}>
                   {saving ? '💾 Saving…' : (savedMessage || 'Save Changes')}

@@ -58,9 +58,9 @@ export function NewListingRoute({
   };
 
   return (
-    <div className="pt-24 pb-32 min-h-screen bg-slate-50">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="sticky top-20 z-30 bg-slate-50 pt-6 pb-4">
+    <div className="pt-20 sm:pt-24 pb-40 sm:pb-32 min-h-screen bg-slate-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="sticky top-16 sm:top-20 z-30 bg-slate-50/95 backdrop-blur-sm pt-4 sm:pt-6 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
             <div>
               <button type="button" onClick={() => navigate(-1)} className="text-sm text-slate-500 hover:text-slate-900">← Back</button>
@@ -73,7 +73,7 @@ export function NewListingRoute({
           </div>
         </div>
 
-        <form id="listing-form" onSubmit={handleSubmit} className="grid gap-6 xl:grid-cols-[1.45fr_0.95fr]">
+        <form id="listing-form" onSubmit={handleSubmit} className="grid gap-6 pb-24 sm:pb-0 lg:grid-cols-[1.45fr_0.95fr]">
           <div className="space-y-6">
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400 mb-4">Listing details</div>
@@ -90,7 +90,7 @@ export function NewListingRoute({
                     spellCheck={true}
                     autoCapitalize="sentences"
                     autoCorrect="on"
-                    className={`w-full rounded-3xl border bg-slate-50 px-5 py-4 text-lg text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 ${listingValidationErrors.title ? 'border-red-300' : 'border-slate-200'}`}
+                    className={`w-full rounded-3xl border bg-slate-50 px-5 py-4 text-[16px] sm:text-lg text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 ${listingValidationErrors.title ? 'border-red-300' : 'border-slate-200'}`}
                   />
                   {listingValidationErrors.title && <p className="mt-2 text-sm text-red-600">{listingValidationErrors.title}</p>}
                 </div>
@@ -106,7 +106,7 @@ export function NewListingRoute({
                     spellCheck={true}
                     autoCapitalize="sentences"
                     autoCorrect="on"
-                    className={`w-full min-h-[160px] rounded-3xl border bg-slate-50 px-5 py-4 text-sm leading-6 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 resize-none ${listingValidationErrors.description ? 'border-red-300' : 'border-slate-200'}`}
+                    className={`w-full min-h-[160px] rounded-3xl border bg-slate-50 px-5 py-4 text-[16px] leading-6 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 resize-none ${listingValidationErrors.description ? 'border-red-300' : 'border-slate-200'}`}
                   />
                   {listingValidationErrors.description && <p className="mt-2 text-sm text-red-600">{listingValidationErrors.description}</p>}
                 </div>
@@ -121,7 +121,7 @@ export function NewListingRoute({
                       value={listingForm.price}
                       onChange={e => handleListingSelectChange('price', e.target.value)}
                       placeholder="0"
-                      className={`w-full rounded-3xl border bg-slate-50 px-5 py-4 text-lg outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 ${listingValidationErrors.price ? 'border-red-300' : 'border-slate-200'}`}
+                      className={`w-full rounded-3xl border bg-slate-50 px-5 py-4 text-[16px] sm:text-lg outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 ${listingValidationErrors.price ? 'border-red-300' : 'border-slate-200'}`}
                     />
                     {listingValidationErrors.price && <p className="mt-2 text-sm text-red-600">{listingValidationErrors.price}</p>}
                   </div>
@@ -150,7 +150,7 @@ export function NewListingRoute({
                       name="category"
                       value={listingForm.category}
                       onChange={e => handleListingSelectChange('category', e.target.value)}
-                      className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm outline-none transition focus:border-emerald-500"
+                      className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-[16px] outline-none transition focus:border-emerald-500"
                     >
                       {['Electronics','Fashion','Furniture','Vehicles','Food & Drinks','Real Estate','Services','Agriculture','Sports','Books','Health & Beauty','Pharmercy','Home & Garden','Others'].map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
@@ -163,7 +163,7 @@ export function NewListingRoute({
                       name="location"
                       value={listingForm.location}
                       onChange={e => handleListingSelectChange('location', e.target.value)}
-                      className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm outline-none transition focus:border-emerald-500"
+                      className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-[16px] outline-none transition focus:border-emerald-500"
                     >
                       {['Lagos','Abuja','Port Harcourt','Kano','Ibadan','Enugu','Kaduna','Benin City','Abeokuta','Owerri','Jos','Akure','Ilorin','Uyo','Maiduguri','Sokoto','Katsina','Bauchi','Gombe','Yola'].map(loc => <option key={loc} value={loc}>{loc}</option>)}
                     </select>
@@ -245,10 +245,10 @@ export function NewListingRoute({
         </form>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-md px-6 py-4">
-        <div className="mx-auto flex max-w-5xl items-center gap-3">
-          <button type="button" onClick={() => navigate(-1)} className="flex-1 rounded-3xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
-          <button type="button" onClick={() => void saveListing()} disabled={listingSubmitting} className="flex-1 rounded-3xl bg-emerald-600 px-5 py-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400">{listingSubmitting ? 'Publishing...' : editingListing ? 'Save changes' : 'Publish listing'}</button>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4">
+        <div className="mx-auto flex max-w-5xl flex-col-reverse gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <button type="button" onClick={() => navigate(-1)} className="w-full rounded-3xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold text-slate-700 hover:bg-slate-50 sm:flex-1">Cancel</button>
+          <button type="button" onClick={() => void saveListing()} disabled={listingSubmitting} className="w-full rounded-3xl bg-emerald-600 px-5 py-4 text-base font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400 sm:flex-1">{listingSubmitting ? 'Publishing...' : editingListing ? 'Save changes' : 'Publish listing'}</button>
         </div>
       </div>
     </div>
