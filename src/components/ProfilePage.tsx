@@ -244,12 +244,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
 
   return (
     <div className="pt-24 pb-20 bg-[#f0f2f5] min-h-screen">
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Hero */}
         <div className="rounded-2xl overflow-hidden relative" style={{ background: 'linear-gradient(90deg,#0f1923 0%, #1a3a28 50%, #3a7d44 100%)' }}>
-          <div className="p-8 md:p-12 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div className="flex items-center gap-6">
-              <div className="relative">
+          <div className="p-6 sm:p-8 md:p-12 flex flex-col gap-5 md:flex-row md:items-center md:justify-between md:gap-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full min-w-0">
+              <div className="relative flex-shrink-0">
                 <img src={pendingAvatarPreview || profile.avatar || `https://i.pravatar.cc/150?u=${profile.id}`} alt="avatar" className="w-24 h-24 md:w-28 md:h-28 rounded-full ring-4 ring-white object-cover" />
                 <button onClick={pickAvatar} className="absolute right-0 bottom-0 bg-white p-2 rounded-full shadow-md -translate-x-2 translate-y-2" aria-label="Upload profile photo">
                   <Plus className="w-4 h-4 text-slate-800" />
@@ -257,19 +257,19 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
                 <label htmlFor="avatarUpload" className="sr-only">Upload profile photo</label>
                 <input id="avatarUpload" name="avatar" ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onAvatarChange} />
               </div>
-              <div className="text-white">
-                <div className="text-2xl md:text-4xl font-semibold">{profile.businessName || profile.name}</div>
-                <div className="text-sm text-white/80 mt-1">{profile.email}</div>
-                <div className="mt-3 max-w-xl text-sm leading-6 text-slate-200">
-                  Manage your seller profile, business details, and contact information from any screen — mobile, desktop, or tap-friendly devices.
-                </div>
-                <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#3a7d44] bg-[#2b6b3b]/20 text-sm">
-                  <span className="text-[#3a7d44]">{badgeText}</span>
+              <div className="text-white min-w-0 w-full">
+                <div className="text-2xl md:text-4xl font-semibold break-words">{profile.businessName || profile.name}</div>
+                <div className="text-sm text-white/80 mt-1 break-all">{profile.email}</div>
+                <div className="mt-3 max-w-xl text-sm leading-6 text-slate-200"></div>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#3a7d44] bg-[#2b6b3b]/20 text-sm">
+                    <span className="text-[#3a7d44]">{badgeText}</span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="mt-4 md:mt-0">
-              <div className="flex gap-3 bg-white/10 rounded-3xl p-2">
+            <div className="w-full md:w-auto md:mt-0">
+              <div className="flex flex-wrap gap-2 bg-white/10 rounded-3xl p-2">
                 <button className="px-4 py-2 rounded-2xl text-white bg-white/10">Profile</button>
                 <button className="px-4 py-2 rounded-2xl text-white/60">Listings</button>
                 <button className="px-4 py-2 rounded-2xl text-white/60">Account</button>
