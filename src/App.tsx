@@ -217,7 +217,6 @@ function MarketConnectApp() {
   // Modals
   
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const createListingTitleRef = useRef<HTMLInputElement | null>(null);
   const [showChat, setShowChat] = useState(false);
   const [activeChat, setActiveChat] = useState<ChatConversation | null>(null);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
@@ -1654,7 +1653,6 @@ function MarketConnectApp() {
         editingListing={editingListing}
         listingForm={listingForm}
         listingError={listingError}
-        createListingTitleRef={createListingTitleRef}
         handleListingTitleChange={handleListingTitleChange}
         handleListingDescriptionChange={handleListingDescriptionChange}
         handleListingSelectChange={handleListingSelectChange}

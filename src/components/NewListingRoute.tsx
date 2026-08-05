@@ -18,7 +18,6 @@ type NewListingRouteProps = {
   editingListing: Listing | null;
   listingForm: ListingFormValues;
   listingError: string | null;
-  createListingTitleRef: React.RefObject<HTMLInputElement | null>;
   handleListingTitleChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleListingDescriptionChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleListingSelectChange: (field: 'price' | 'category' | 'location', value: string) => void;
@@ -26,7 +25,6 @@ type NewListingRouteProps = {
   handleImageDrop: (event: React.DragEvent<HTMLDivElement>) => void;
   handleImageRemove: (index: number) => void;
   saveListing: () => Promise<void>;
-  setListingForm: React.Dispatch<React.SetStateAction<ListingFormValues>>;
   navigate: ReturnType<typeof useNavigate>;
   listingSubmitting: boolean;
   listingSuccess: string | null;
@@ -39,7 +37,6 @@ export function NewListingRoute({
   editingListing,
   listingForm,
   listingError,
-  createListingTitleRef,
   handleListingTitleChange,
   handleListingDescriptionChange,
   handleListingSelectChange,
@@ -47,7 +44,6 @@ export function NewListingRoute({
   handleImageDrop,
   handleImageRemove,
   saveListing,
-  setListingForm,
   navigate,
   listingSubmitting,
   listingSuccess,
@@ -86,7 +82,6 @@ export function NewListingRoute({
                   <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-2">Title</label>
                   <input
                     id="title"
-                    ref={createListingTitleRef}
                     type="text"
                     value={listingForm.title || ''}
                     onChange={handleListingTitleChange}
@@ -95,7 +90,6 @@ export function NewListingRoute({
                     spellCheck={true}
                     autoCapitalize="sentences"
                     autoCorrect="on"
-                    autoFocus
                     className={`w-full rounded-3xl border bg-slate-50 px-5 py-4 text-lg text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 ${listingValidationErrors.title ? 'border-red-300' : 'border-slate-200'}`}
                   />
                   {listingValidationErrors.title && <p className="mt-2 text-sm text-red-600">{listingValidationErrors.title}</p>}
@@ -160,6 +154,7 @@ export function NewListingRoute({
                     >
                       {['Electronics','Fashion','Furniture','Vehicles','Food & Drinks','Real Estate','Services','Agriculture','Sports','Books','Health & Beauty','Pharmercy','Home & Garden','Others'].map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
+                    {listingValidationErrors.category && <p className="mt-2 text-sm text-red-600">{listingValidationErrors.category}</p>}
                   </div>
                   <div>
                     <label htmlFor="location" className="block text-sm font-medium text-slate-700 mb-2">Location</label>
@@ -173,7 +168,6 @@ export function NewListingRoute({
                       {['Lagos','Abuja','Port Harcourt','Kano','Ibadan','Enugu','Kaduna','Benin City','Abeokuta','Owerri','Jos','Akure','Ilorin','Uyo','Maiduguri','Sokoto','Katsina','Bauchi','Gombe','Yola'].map(loc => <option key={loc} value={loc}>{loc}</option>)}
                     </select>
                     {listingValidationErrors.location && <p className="mt-2 text-sm text-red-600">{listingValidationErrors.location}</p>}
-                    {listingValidationErrors.category && <p className="mt-2 text-sm text-red-600">{listingValidationErrors.category}</p>}
                   </div>
                 </div>
               </div>
@@ -254,7 +248,7 @@ export function NewListingRoute({
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-md px-6 py-4">
         <div className="mx-auto flex max-w-5xl items-center gap-3">
           <button type="button" onClick={() => navigate(-1)} className="flex-1 rounded-3xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
-          <button type="submit" form="listing-form" disabled={listingSubmitting} className="flex-1 rounded-3xl bg-emerald-600 px-5 py-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400">{listingSubmitting ? 'Publishing...' : editingListing ? 'Save changes' : 'Publish listing'}</button>
+          <button type="button" onClick={() => void saveListing()} disabled={listingSubmitting} className="flex-1 rounded-3xl bg-emerald-600 px-5 py-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400">{listingSubmitting ? 'Publishing...' : editingListing ? 'Save changes' : 'Publish listing'}</button>
         </div>
       </div>
     </div>

@@ -260,7 +260,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
               <div className="text-white">
                 <div className="text-2xl md:text-4xl font-semibold">{profile.businessName || profile.name}</div>
                 <div className="text-sm text-white/80 mt-1">{profile.email}</div>
-                <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#3a7d44] bg-[#2b6b3b]/20 text-sm">
+                <div className="mt-3 max-w-xl text-sm leading-6 text-slate-200">
+                  Manage your seller profile, business details, and contact information from any screen — mobile, desktop, or tap-friendly devices.
+                </div>
+                <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#3a7d44] bg-[#2b6b3b]/20 text-sm">
                   <span className="text-[#3a7d44]">{badgeText}</span>
                 </div>
               </div>

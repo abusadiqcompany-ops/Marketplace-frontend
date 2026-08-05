@@ -98,12 +98,6 @@ export function MarketplaceShell({
           </div>
 
           <div className="flex items-center gap-4 flex-wrap">
-            {currentUserSafe.role === 'seller' && (
-              <button onClick={onOpenCreateListing} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 transition text-white rounded-2xl text-xs font-medium">
-                <Plus className="w-4 h-4" /> New Listing
-              </button>
-            )}
-
             <div className="flex items-center gap-3 pl-4 border-l">
               <div className="relative">
                 <button
