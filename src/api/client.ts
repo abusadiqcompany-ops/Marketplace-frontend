@@ -240,10 +240,13 @@ export async function getWalletBalance() {
     const response = await api.get('/wallet/balance');
     return response.data.balance;
   } catch (err: any) {
-    // If unauthorized, return a safe fallback of 0 so UI won't crash.
-    if (err?.response?.status === 401) {
+    // If unauthorized or a network error (no response), return a safe fallback of 0
+    // so UI won't crash when offline or behind network issues.
+    if (err?.response?.status === 401 || !err?.response) {
+      console.warn('[api/client] getWalletBalance failed, returning fallback 0.', err);
       return 0;
     }
+
     throw err;
   }
 }
