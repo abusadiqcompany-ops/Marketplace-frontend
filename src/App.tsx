@@ -246,14 +246,21 @@ function MarketConnectApp() {
   const [profileForm, setProfileForm] = useState<Partial<UserType>>({});
   const [profilePhoto, setProfilePhoto] = useState<string>('');
   const [profileSaving, setProfileSaving] = useState(false);
+  const prevProfileUserId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!currentUser) {
       setProfileForm({});
       setProfilePhoto('');
+      prevProfileUserId.current = null;
       return;
     }
 
+    if (prevProfileUserId.current === currentUser.id) {
+      return;
+    }
+
+    prevProfileUserId.current = currentUser.id;
     setProfileForm({
       name: currentUser.name,
       email: currentUser.email,

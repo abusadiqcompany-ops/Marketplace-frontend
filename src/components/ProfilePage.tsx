@@ -56,12 +56,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
-  const [deleteRequestLoading, setDeleteRequestLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const profileUserIdRef = useRef<string | null>(currentUser?.id ?? null);
+  const profileLoadRef = useRef(0);
+  const dirtyRef = useRef(false);
+  const [deleteRequestLoading, setDeleteRequestLoading] = useState(false);
 
   useEffect(() => {
     const fallbackProfile = buildFallbackProfile(currentUser);
     setProfile((prev: any) => (prev && prev.id === currentUser?.id ? prev : fallbackProfile));
+    profileUserIdRef.current = currentUser?.id ?? null;
 
     const load = async () => {
       if (!currentUser) {
@@ -70,31 +74,40 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
         return;
       }
 
+      const loadId = ++profileLoadRef.current;
       setLoading(true);
       try {
         const p = await getProfile();
-        setProfile({
-          ...(fallbackProfile || {}),
-          ...p,
-          id: p?.id || currentUser?.id,
-          role: p?.role || currentUser?.role,
+        if (loadId !== profileLoadRef.current) return;
+        setProfile((prev: any) => {
+          if (dirtyRef.current) return prev;
+          return {
+            ...(fallbackProfile || {}),
+            ...p,
+            id: p?.id || currentUser?.id,
+            role: p?.role || currentUser?.role,
+          };
         });
       } catch (e: any) {
         console.warn('Profile data unavailable, using local fallback profile.', e?.message || String(e));
-        setProfile(fallbackProfile);
+        setProfile((prev: any) => (dirtyRef.current ? prev : fallbackProfile));
       }
       try {
         const s = await getProfileStats();
+        if (loadId !== profileLoadRef.current) return;
         setStats(s);
       } catch (e: any) {
         console.warn('Profile stats unavailable.', e?.message || String(e));
       }
-      setLoading(false);
+      if (loadId === profileLoadRef.current) {
+        setLoading(false);
+      }
     };
     load();
   }, [currentUser]);
 
   const onFieldChange = (key: string, value: any) => {
+    dirtyRef.current = true;
     setProfile((prev: any) => ({ ...prev, [key]: value }));
     setDirty(true);
   };
@@ -162,6 +175,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
       const updated = await updateProfile(payload);
       setProfile((prev: any) => ({ ...prev, ...updated }));
       setSavedMessage('✅ Changes Saved!');
+      dirtyRef.current = false;
       setDirty(false);
       setTimeout(() => setSavedMessage(''), 2200);
     } catch (e: any) {
@@ -177,7 +191,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
 
   const onAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (!f) return;
+    if (!f) {
+      e.target.value = '';
+      return;
+    }
 
     if (pendingAvatarPreview?.startsWith('blob:')) {
       URL.revokeObjectURL(pendingAvatarPreview);
@@ -188,14 +205,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
     setPendingAvatarPreview(previewUrl);
     setSavedMessage('📷 Photo selected. Tap Upload photo to save it.');
     setTimeout(() => setSavedMessage(''), 2400);
+    e.target.value = '';
   };
 
-  const uploadSelectedAvatar = async () => {
-    if (!pendingAvatarFile) return;
-
+  const uploadAvatarFile = async (file: File) => {
     setAvatarUploading(true);
     try {
-      const res = await uploadProfileAvatar(pendingAvatarFile);
+      const res = await uploadProfileAvatar(file);
       setProfile((prev: any) => ({ ...prev, avatar: res.avatar }));
       setSavedMessage('✅ Avatar updated');
       setDirty(false);
@@ -212,6 +228,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
     } finally {
       setAvatarUploading(false);
     }
+  };
+
+  const uploadSelectedAvatar = async () => {
+    if (!pendingAvatarFile) return;
+    await uploadAvatarFile(pendingAvatarFile);
   };
 
   if (loading && !profile) return <div className="pt-24 px-6">Loading profile...</div>;
