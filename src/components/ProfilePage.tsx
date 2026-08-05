@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { getProfile, updateProfile, getProfileStats, uploadProfileAvatar } from '../api/client';
+import { getProfile, updateProfile, getProfileStats, uploadProfileAvatar, createAccountDeletionRequest } from '../api/client';
 import { User } from '../types';
 import { Plus } from 'lucide-react';
 
@@ -40,6 +40,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
       description: user.description || '',
       phone: user.phone || '',
       location: formatLocationValue(user.location),
+      sellerLocation: formatLocationValue(user.sellerLocation),
       role: user.role,
     };
   };
@@ -53,6 +54,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
   const [pendingAvatarPreview, setPendingAvatarPreview] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteRequestLoading, setDeleteRequestLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -96,7 +100,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
   };
 
   const validateProfile = () => {
-    const isSeller = profile.role === 'seller';
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const locationValue = formatLocationValue(profile.location).trim();
 
@@ -143,12 +146,21 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
 
     setSaving(true);
     try {
-      await updateProfile({
+      const payload: any = {
         businessName: profile.businessName,
         description: profile.description,
         phone: profile.phone,
         location: profile.location,
-      });
+        sellerLocation: profile.sellerLocation,
+      };
+
+      if (!isSeller) {
+        payload.name = profile.name;
+        payload.email = profile.email;
+      }
+
+      const updated = await updateProfile(payload);
+      setProfile((prev: any) => ({ ...prev, ...updated }));
       setSavedMessage('✅ Changes Saved!');
       setDirty(false);
       setTimeout(() => setSavedMessage(''), 2200);
@@ -185,12 +197,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
     try {
       const res = await uploadProfileAvatar(pendingAvatarFile);
       setProfile((prev: any) => ({ ...prev, avatar: res.avatar }));
+      setSavedMessage('✅ Avatar updated');
+      setDirty(false);
       if (pendingAvatarPreview?.startsWith('blob:')) {
         URL.revokeObjectURL(pendingAvatarPreview);
       }
       setPendingAvatarFile(null);
       setPendingAvatarPreview(null);
-      setSavedMessage('✅ Avatar updated');
       setTimeout(() => setSavedMessage(''), 2200);
     } catch (err: any) {
       console.error(err?.message || err);
@@ -301,6 +314,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
                   {NIGERIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
+              {isSeller && (
+                <div>
+                  <label htmlFor="sellerLocation" className="text-sm text-slate-600">Seller Location</label>
+                  <select id="sellerLocation" name="sellerLocation" value={formatLocationValue(profile.sellerLocation)} onChange={e => onFieldChange('sellerLocation', e.target.value)} className="w-full mt-2 p-3 rounded-lg bg-[#fafafa] border border-[#e8e8e8]">
+                    <option value="">Select state</option>
+                    {NIGERIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <button onClick={onSave} disabled={!dirty || saving} className={`w-full p-3 rounded-lg text-white font-semibold ${dirty ? 'bg-gradient-to-r from-[#2f6936] to-[#3a7d44]' : 'bg-slate-300'}`}>
@@ -309,8 +331,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
               </div>
 
               <div className="flex gap-3 mt-3">
-                <button className="flex-1 p-3 rounded-lg border border-slate-300">Change Password</button>
-                <button className="flex-1 p-3 rounded-lg border border-rose-300 text-rose-600">Delete Account</button>
+                <button type="button" className="flex-1 p-3 rounded-lg border border-slate-300">Change Password</button>
+                <button type="button" onClick={() => setShowDeleteModal(true)} className="flex-1 p-3 rounded-lg border border-rose-300 text-rose-600">Delete Account</button>
               </div>
             </div>
           </div>
@@ -354,6 +376,60 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
           </aside>
         </div>
       </div>
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-lg font-semibold">Request Account Deletion</div>
+              <button type="button" onClick={() => { setShowDeleteModal(false); setDeleteReason(''); }} className="text-slate-500">✕</button>
+            </div>
+            <div className="space-y-4">
+              <p className="text-sm text-slate-600">A deletion request will be sent to the admin. Your account remains active until approval.</p>
+              <label htmlFor="account-delete-reason" className="text-sm text-slate-600">Reason for deletion</label>
+              <textarea
+                id="account-delete-reason"
+                rows={5}
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                className="w-full rounded-3xl border border-slate-200 p-4 text-sm"
+                placeholder="Please describe why you want to delete your account"
+              />
+              <div className="flex gap-3">
+                <button type="button" onClick={() => { setShowDeleteModal(false); setDeleteReason(''); }} className="flex-1 rounded-3xl border border-slate-300 px-4 py-3 text-slate-700">Cancel</button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!deleteReason.trim()) {
+                      setSavedMessage('Please provide a reason for account deletion.');
+                      setTimeout(() => setSavedMessage(''), 3000);
+                      return;
+                    }
+
+                    setDeleteRequestLoading(true);
+                    try {
+                      await createAccountDeletionRequest(deleteReason.trim());
+                      setSavedMessage('✅ Deletion request sent to admin.');
+                      setShowDeleteModal(false);
+                      setDeleteReason('');
+                    } catch (error: any) {
+                      console.error(error?.message || error);
+                      setSavedMessage(error?.response?.data?.error || 'Unable to send deletion request.');
+                    } finally {
+                      setDeleteRequestLoading(false);
+                      setTimeout(() => setSavedMessage(''), 3000);
+                    }
+                  }}
+                  disabled={deleteRequestLoading}
+                  className="flex-1 rounded-3xl bg-rose-600 px-4 py-3 text-white disabled:opacity-60"
+                >
+                  {deleteRequestLoading ? 'Sending…' : 'Send request'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast */}
       {savedMessage && (

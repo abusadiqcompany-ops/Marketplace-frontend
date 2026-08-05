@@ -41,6 +41,7 @@ import {
   deleteAdminUser,
   deleteAdminListing,
   resolveAdminDispute,
+  updateProfile as updateProfileApi,
 } from './api/client';
 import { setOnAuthFailure } from './api/client';
 import { getAllStates } from './data/nigerian-locations';
@@ -244,6 +245,28 @@ function MarketConnectApp() {
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
   const [profileForm, setProfileForm] = useState<Partial<UserType>>({});
   const [profilePhoto, setProfilePhoto] = useState<string>('');
+  const [profileSaving, setProfileSaving] = useState(false);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setProfileForm({});
+      setProfilePhoto('');
+      return;
+    }
+
+    setProfileForm({
+      name: currentUser.name,
+      email: currentUser.email,
+      phone: currentUser.phone,
+      location: currentUser.location,
+      sellerLocation: currentUser.sellerLocation,
+      businessName: currentUser.businessName,
+      description: currentUser.description,
+      avatar: currentUser.avatar,
+    });
+    setProfilePhoto(currentUser.avatar || '');
+  }, [currentUser]);
+
   // Wallet / Payment state
   const [depositAmount, setDepositAmount] = useState('');
   const [depositMethod, setDepositMethod] = useState<'paystack' | 'flutterwave'>('paystack');
@@ -2256,7 +2279,7 @@ function MarketConnectApp() {
     return { label: 'Pending Verification', pillClass: 'bg-amber-100 text-amber-700' };
   };
 
-  const updateProfile = () => {
+  const updateProfile = async () => {
     if (!currentUser) return;
 
     const normalizedProfileForm = {
@@ -2265,12 +2288,22 @@ function MarketConnectApp() {
       sellerLocation: typeof profileForm.sellerLocation === 'string' ? profileForm.sellerLocation : normalizeListingLocation(profileForm.sellerLocation),
     };
 
-    const updatedUser = { ...currentUser, ...normalizedProfileForm, avatar: profilePhoto || currentUser.avatar };
-    setCurrentUser(updatedUser);
-    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
-    setProfileForm({});
-    setProfilePhoto('');
-    addNotification('Profile updated successfully!', 'success');
+    setProfileSaving(true);
+    try {
+      const updatedUser = await updateProfileApi({
+        ...normalizedProfileForm,
+        avatar: profilePhoto || currentUser.avatar,
+      });
+
+      setCurrentUser(updatedUser);
+      setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+      setProfileForm(updatedUser);
+      addNotification('Profile updated successfully!', 'success');
+    } catch (error: any) {
+      addNotification(error?.response?.data?.error || error?.message || 'Unable to update profile.', 'error');
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
   const submitChangePassword = async () => {
@@ -2355,6 +2388,7 @@ function MarketConnectApp() {
           apiLogout();
           setCurrentUser(null);
         }
+        addNotification('Deletion request approved and user removed from the platform.', 'success');
       } else {
         addPortalNotification({
           title: 'Account deletion rejected',
@@ -2363,9 +2397,8 @@ function MarketConnectApp() {
           targetUserId: request.userId,
           relatedUserId: request.userId,
         });
+        addNotification('Deletion request rejected.', 'success');
       }
-
-      addNotification(action === 'approve' ? 'Deletion request approved.' : 'Deletion request rejected.', 'success');
     } catch (error: any) {
       addNotification(error?.response?.data?.error || error?.message || 'Unable to review deletion request.', 'error');
     }
@@ -3332,7 +3365,16 @@ function MarketConnectApp() {
                 )}
 
                 <div className="flex flex-wrap gap-3 mt-4">
-                  <button onClick={updateProfile} className="px-8 py-3.5 bg-slate-900 text-white rounded-3xl font-medium">Save Profile Changes</button>
+                  <button
+                    onClick={updateProfile}
+                    disabled={profileSaving}
+                    aria-busy={profileSaving}
+                    aria-disabled={profileSaving}
+                    className={`inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-3xl font-medium text-white ${profileSaving ? 'bg-slate-500 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800'}`}
+                  >
+                    {profileSaving && <span className="inline-block h-4 w-4 rounded-full border-2 border-white/60 border-r-transparent animate-spin" aria-hidden="true" />}
+                    {profileSaving ? 'Saving…' : 'Save Profile Changes'}
+                  </button>
                   <button onClick={() => setShowChangePasswordModal(true)} className="px-6 py-3.5 border border-slate-300 text-slate-700 rounded-3xl font-medium">Change Password</button>
                   <button onClick={() => setShowDeleteAccountModal(true)} className="px-6 py-3.5 border border-rose-300 text-rose-600 rounded-3xl font-medium">Delete Account</button>
                   {currentUserSafe.verificationRequestStatus === 'pending' && !currentUserSafe.verified && (
