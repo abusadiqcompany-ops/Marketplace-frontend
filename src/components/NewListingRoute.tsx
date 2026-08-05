@@ -73,7 +73,7 @@ export function NewListingRoute({
           </div>
         </div>
 
-        <form id="listing-form" onSubmit={handleSubmit} className="grid gap-6 pb-24 sm:pb-0 lg:grid-cols-[1.45fr_0.95fr]">
+        <form id="listing-form" onSubmit={handleSubmit} className="flex flex-col gap-6 pb-24 sm:pb-0 lg:grid lg:grid-cols-[1.45fr_0.95fr]">
           <div className="space-y-6">
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400 mb-4">Listing details</div>
@@ -212,7 +212,7 @@ export function NewListingRoute({
             {listingSuccess && <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">{listingSuccess}</div>}
           </div>
 
-          <aside className="space-y-6">
+          <aside className="space-y-6 order-first lg:order-none">
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400 mb-4">Listing preview</div>
               <div className="rounded-3xl overflow-hidden bg-slate-100">
