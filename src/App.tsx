@@ -3007,44 +3007,53 @@ function MarketConnectApp() {
               <div className="md:col-span-8 bg-white border rounded-3xl overflow-hidden flex flex-col h-[620px]">
                 {showChat && activeChat ? (
                   <>
-                    <div className="p-5 border-b flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-slate-200 rounded-2xl overflow-hidden">
-                          <img src={users.find(u => u.id === activeChat.otherUserId)?.avatar} className="object-cover" />
+                    <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-11 w-11 overflow-hidden rounded-full border border-slate-200 bg-slate-100">
+                            <img src={users.find(u => u.id === activeChat.otherUserId)?.avatar} className="h-full w-full object-cover" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-slate-900">{activeChat.otherUserName}</div>
+                            <div className="flex items-center gap-1 text-xs text-emerald-600">
+                              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-600"></div>
+                              Online
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-semibold">{activeChat.otherUserName}</div>
-                          <div className="text-xs text-emerald-600 flex items-center gap-1"><div className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-pulse"></div> Online</div>
+                        <div className="flex items-center gap-2">
+                          {activeChat.listingTitle && <div className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">{activeChat.listingTitle}</div>}
+                          <button onClick={() => { setShowChat(false); setActiveChat(null); }} className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">×</button>
                         </div>
                       </div>
-                      {activeChat.listingTitle && <div className="text-xs px-4 py-1 bg-emerald-100 text-emerald-700 rounded-full font-medium">{activeChat.listingTitle}</div>}
-                      <button onClick={() => { setShowChat(false); setActiveChat(null); }} className="text-slate-400">×</button>
                     </div>
 
-                    <div className="flex-1 p-6 overflow-y-auto bg-slate-50 space-y-4" id="chat-scroll">
-                      {chatMessages.length > 0 ? chatMessages.map((msg, idx) => (
-                        <div key={idx} className={`flex ${msg.senderId === currentUserSafe.id ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[75%] px-5 py-3 rounded-3xl ${msg.senderId === currentUserSafe.id ? 'bg-slate-900 text-white rounded-tr-none' : 'bg-white border rounded-tl-none'}`}>
-                            <div className="text-xs opacity-75 mb-0.5">{msg.senderName}</div>
-                            {msg.content}
+                    <div className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_#f8fafc_0%,_#f1f5f9_100%)] p-4 sm:p-6" id="chat-scroll">
+                      <div className="mx-auto flex max-w-3xl flex-col gap-3">
+                        {chatMessages.length > 0 ? chatMessages.map((msg, idx) => (
+                          <div key={idx} className={`flex ${msg.senderId === currentUserSafe.id ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[80%] rounded-3xl px-4 py-3 text-sm leading-6 shadow-sm ${msg.senderId === currentUserSafe.id ? 'rounded-br-md bg-slate-900 text-white' : 'rounded-bl-md border border-slate-200 bg-white text-slate-700'}`}>
+                              <div className={`mb-1 text-[11px] font-medium uppercase tracking-[0.2em] ${msg.senderId === currentUserSafe.id ? 'text-slate-300' : 'text-slate-400'}`}>{msg.senderName}</div>
+                              {msg.content}
+                            </div>
                           </div>
-                        </div>
-                      )) : <div className="text-center text-sm py-8 text-slate-400">Start the conversation...</div>}
-                      {isTyping && (
-                        <div className="flex justify-start">
-                          <div className="max-w-[75%] rounded-3xl border border-slate-200 bg-white px-5 py-3 text-sm text-slate-500">
-                            {activeChat?.otherUserName || 'The other person'} is typing...
+                        )) : <div className="rounded-3xl border border-dashed border-slate-200 bg-white/70 px-6 py-8 text-center text-sm text-slate-400">Start the conversation...</div>}
+                        {isTyping && (
+                          <div className="flex justify-start">
+                            <div className="max-w-[80%] rounded-3xl rounded-bl-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">
+                              {activeChat?.otherUserName || 'The other person'} is typing...
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
 
                     {currentUserSafe.role !== 'admin' ? (
-                      <div className="p-4 border-t bg-white">
-                        <div className="flex gap-3">
+                      <div className="border-t border-slate-200 bg-white p-4">
+                        <div className="mx-auto flex max-w-3xl gap-3">
                           <label htmlFor="chat-message" className="sr-only">Send a message</label>
-                          <input id="chat-message" name="message" value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} placeholder="Type your message..." className="flex-1 bg-slate-100 px-5 py-3.5 rounded-3xl text-sm" />
-                          <button onClick={sendMessage} className="px-7 bg-slate-900 text-white rounded-3xl flex items-center"><Send className="w-4 h-4" /></button>
+                          <input id="chat-message" name="message" value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} placeholder="Type your message..." className="flex-1 rounded-3xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white" />
+                          <button onClick={sendMessage} className="flex items-center rounded-3xl bg-emerald-600 px-6 py-3 text-white shadow-sm hover:bg-emerald-700"><Send className="h-4 w-4" /></button>
                         </div>
                       </div>
                     ) : (
