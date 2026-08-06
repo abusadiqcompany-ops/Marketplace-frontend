@@ -359,6 +359,7 @@ function MarketConnectApp() {
     reportedUserId: '',
     reportedUserName: '',
     reportedRole: 'buyer' as Role,
+    traceContact: '',
     type: 'report' as 'report' | 'complaint',
     subject: '',
     details: '',
@@ -2345,19 +2346,23 @@ function MarketConnectApp() {
   const handleSubmitReport = async () => {
     if (!currentUser) return;
 
-    if (!reportForm.reportedUserId || !reportForm.subject.trim() || !reportForm.details.trim()) {
-      addNotification('Please select a user and fill in the subject and details.', 'error');
+    const traceContact = reportForm.traceContact.trim();
+    if (!traceContact || !reportForm.subject.trim() || !reportForm.details.trim()) {
+      addNotification('Please provide an email or phone number and fill in the subject and details.', 'error');
       return;
     }
 
+    const traceContactId = `trace-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const reportDetails = `${reportForm.details.trim()}\n\nTrace contact: ${traceContact}`;
+
     try {
       const createdReport = await createReport({
-        reportedUserId: reportForm.reportedUserId,
-        reportedUserName: reportForm.reportedUserName || undefined,
+        reportedUserId: traceContactId,
+        reportedUserName: traceContact,
         reportedRole: reportForm.reportedRole,
         type: reportForm.type,
         subject: reportForm.subject.trim(),
-        details: reportForm.details.trim(),
+        details: reportDetails,
       });
 
       setReports(prev => [createdReport, ...prev]);
@@ -2373,6 +2378,7 @@ function MarketConnectApp() {
         reportedUserId: '',
         reportedUserName: '',
         reportedRole: 'buyer',
+        traceContact: '',
         type: 'report',
         subject: '',
         details: '',
@@ -4057,25 +4063,20 @@ function MarketConnectApp() {
         <div className="fixed inset-0 z-[75] bg-black/60 flex items-center justify-center p-4">
           <div className="bg-white p-8 rounded-3xl w-full max-w-lg">
             <div className="font-semibold tracking-tight text-2xl">Report a user</div>
-            <div className="text-sm text-slate-600 mt-1 mb-5">Submit a report or complaint to the admin about a buyer or seller.</div>
+            <div className="text-sm text-slate-600 mt-1 mb-5">Submit a report or complaint to the admin and include the user’s email or phone number for easier follow-up.</div>
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="report-user" className="text-sm font-medium text-slate-500">User</label>
-                <select id="report-user" name="reportedUserId" value={reportForm.reportedUserId} onChange={(e) => {
-                  const selectedUser = users.find(user => user.id === e.target.value);
-                  setReportForm(prev => ({
-                    ...prev,
-                    reportedUserId: selectedUser?.id || '',
-                    reportedUserName: selectedUser?.name || '',
-                    reportedRole: selectedUser?.role || 'buyer',
-                  }));
-                }} className="w-full mt-1.5 border px-5 py-3 rounded-2xl">
-                  <option value="">Select a user</option>
-                  {users.filter(user => user.id !== currentUserSafe.id).map(user => (
-                    <option key={user.id} value={user.id}>{user.name} ({user.role})</option>
-                  ))}
-                </select>
+                <label htmlFor="report-trace-contact" className="text-sm font-medium text-slate-500">Email or phone number</label>
+                <input
+                  id="report-trace-contact"
+                  name="traceContact"
+                  type="text"
+                  value={reportForm.traceContact}
+                  onChange={(e) => setReportForm(prev => ({ ...prev, traceContact: e.target.value }))}
+                  placeholder="e.g. user@example.com or +2348012345678"
+                  className="w-full mt-1.5 border px-5 py-3 rounded-2xl"
+                />
               </div>
 
               <div>
@@ -4098,7 +4099,7 @@ function MarketConnectApp() {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <button onClick={() => { setShowReportModal(false); setReportForm({ reportedUserId: '', reportedUserName: '', reportedRole: 'buyer', type: 'report', subject: '', details: '' }); }} className="flex-1 py-4 border rounded-3xl">Cancel</button>
+              <button onClick={() => { setShowReportModal(false); setReportForm({ reportedUserId: '', reportedUserName: '', reportedRole: 'buyer', traceContact: '', type: 'report', subject: '', details: '' }); }} className="flex-1 py-4 border rounded-3xl">Cancel</button>
               <button onClick={handleSubmitReport} className="flex-1 py-4 bg-amber-600 text-white font-medium rounded-3xl">Submit</button>
             </div>
           </div>
