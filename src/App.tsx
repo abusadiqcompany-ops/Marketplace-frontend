@@ -47,6 +47,7 @@ import { setOnAuthFailure } from './api/client';
 import { getAllStates } from './data/nigerian-locations';
 import { NotificationCard } from './components/NotificationCard';
 import { MarketplaceShell } from './components/MarketplaceShell';
+import { getAccessToken } from './api/client';
 import { AuthPage } from './components/AuthPage';
 import { LandingPage } from './components/LandingPage';
 import { NewListingForm, type ListingFormValues } from './components/NewListingForm';
@@ -96,6 +97,14 @@ const NIGERIAN_BANKS = [
 ];
 
 const ProfilePage = React.lazy(() => import('./components/ProfilePage').then(m => ({ default: m.ProfilePage })));
+
+const normalizeApiUrl = (url: string): string => {
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  const normalized = trimmed.replace(/\/$/, '');
+  if (/^https?:\/\//i.test(normalized)) return normalized;
+  return `https://${normalized.replace(/^\/+/, '')}`;
+};
 
 const buildInitialAppNotifications = (): AppNotification[] => {
   const base = new Date();
@@ -182,6 +191,8 @@ function MarketConnectApp() {
       return [];
     }
   });
+  const [chatSyncing, setChatSyncing] = useState(false);
+  const chatEventSourceRef = useRef<EventSource | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [deletionRequests, setDeletionRequests] = useState<AccountDeletionRequest[]>([]);
@@ -233,6 +244,11 @@ function MarketConnectApp() {
   const [showOrderModal, setShowOrderModal] = useState<Listing | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState<Order | null>(null);
   const [showReviewModal, setShowReviewModal] = useState<Order | null>(null);
+
+  const navigateTo = (tab: string) => {
+    const path = tab === 'discover' ? '/' : `/${tab}`;
+    navigate(path);
+  };
 
   // Form States
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
@@ -879,15 +895,14 @@ function MarketConnectApp() {
 
   const conversations = getConversations();
 
-  // Load chat messages
-  const loadChat = (conv: ChatConversation) => {
+  const loadChat = useCallback((conv: ChatConversation) => {
     if (!currentUser) return;
 
     const chatId = currentUser.role === 'admin' && conv.chatId
       ? conv.chatId
       : [currentUser.id, conv.otherUserId].sort().join('-') + (conv.listingId ? `-${conv.listingId}` : '');
-    
-    const chatMsgs = messages.filter(m => m.chatId === chatId).sort((a, b) => 
+
+    const chatMsgs = messages.filter(m => m.chatId === chatId).sort((a, b) =>
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
@@ -896,7 +911,27 @@ function MarketConnectApp() {
     setShowChat(true);
     setNewMessage('');
     navigateTo('messages');
-  };
+
+    const token = getAccessToken();
+    if (!token) return;
+
+    setChatSyncing(true);
+    fetch(`${import.meta.env.VITE_API_URL ? normalizeApiUrl(import.meta.env.VITE_API_URL) : ''}/api/chat/${encodeURIComponent(chatId)}/messages`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Unable to load remote messages');
+        const remoteMessages = await response.json() as Message[];
+        const mergedMessages = [...messages.filter(m => m.chatId !== chatId), ...remoteMessages]
+          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        setMessages(prev => [...prev.filter(m => m.chatId !== chatId), ...remoteMessages]);
+        setChatMessages(mergedMessages);
+      })
+      .catch(() => {
+        setChatMessages(chatMsgs);
+      })
+      .finally(() => setChatSyncing(false));
+  }, [currentUser, messages, navigateTo]);
 
   useEffect(() => {
     if (!activeChat || !currentUser) return;
@@ -910,6 +945,44 @@ function MarketConnectApp() {
   }, [messages, activeChat, currentUser]);
 
   useEffect(() => {
+    if (!activeChat || !currentUser) return;
+
+    const chatId = activeChat.chatId || [currentUser.id, activeChat.otherUserId].sort().join('-') + (activeChat.listingId ? `-${activeChat.listingId}` : '');
+    const baseUrl = import.meta.env.VITE_API_URL ? normalizeApiUrl(import.meta.env.VITE_API_URL) : '';
+    const streamUrl = `${baseUrl}/api/chat/stream?chatId=${encodeURIComponent(chatId)}&userId=${encodeURIComponent(currentUser.id)}`;
+
+    if (chatEventSourceRef.current) {
+      chatEventSourceRef.current.close();
+    }
+
+    const eventSource = new EventSource(streamUrl);
+    chatEventSourceRef.current = eventSource;
+
+    eventSource.onmessage = (event) => {
+      try {
+        const remoteMessage = JSON.parse(event.data) as Message;
+        setMessages(prev => {
+          const alreadyExists = prev.some(item => item.id === remoteMessage.id);
+          return alreadyExists ? prev : [...prev, remoteMessage];
+        });
+      } catch (error) {
+        console.warn('[chat] Failed to parse streamed message', error);
+      }
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+      if (chatEventSourceRef.current === eventSource) {
+        chatEventSourceRef.current = null;
+      }
+    };
+  }, [activeChat, currentUser]);
+
+  useEffect(() => {
     const container = document.getElementById('chat-scroll');
     if (container) {
       container.scrollTop = container.scrollHeight;
@@ -917,11 +990,11 @@ function MarketConnectApp() {
   }, [chatMessages]);
 
   // Send message - real conversation flow
-  const sendMessage = () => {
+  const sendMessage = async () => {
     const outgoingContent = newMessage.trim();
     if (!outgoingContent || !activeChat || !currentUser || currentUser.role === 'admin') return;
 
-    const chatId = [currentUser.id, activeChat.otherUserId].sort().join('-') + 
+    const chatId = [currentUser.id, activeChat.otherUserId].sort().join('-') +
                    (activeChat.listingId ? `-${activeChat.listingId}` : '');
 
     const message: Message = {
@@ -934,8 +1007,36 @@ function MarketConnectApp() {
     };
 
     setMessages(prev => [...prev, message]);
+    setChatMessages(prev => [...prev, message]);
     setNewMessage('');
     addNotification(`Message sent to ${activeChat.otherUserName}`, 'message');
+
+    const token = getAccessToken();
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL ? normalizeApiUrl(import.meta.env.VITE_API_URL) : ''}/api/chat/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          senderId: currentUser.id,
+          senderName: currentUser.name,
+          content: outgoingContent,
+          recipientId: activeChat.otherUserId,
+          listingId: activeChat.listingId,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Unable to save remote message');
+      const remoteMessage = await response.json() as Message;
+      setMessages(prev => [...prev.filter(item => item.id !== message.id), remoteMessage]);
+      setChatMessages(prev => [...prev.filter(item => item.id !== message.id), remoteMessage]);
+    } catch (error) {
+      console.warn('[chat] Remote sync failed, staying local.', error);
+    }
   };
 
   const sendReplyFromOtherSide = () => {
@@ -2805,11 +2906,6 @@ function MarketConnectApp() {
   };
 
   // Main Render
-  const navigateTo = (tab: string) => {
-    const path = tab === 'discover' ? '/' : `/${tab}`;
-    navigate(path);
-  };
-
   if (!currentUser && location.pathname === LOGIN_PATH) {
     return (
       <AuthPage
