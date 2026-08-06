@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Listing, User as UserType } from '../types';
@@ -51,31 +51,6 @@ export function NewListingRoute({
   listingValidationErrors,
 }: NewListingRouteProps) {
   const conditions = ['New', 'Like New', 'Used', 'Refurbished'] as const;
-  const [previewForm, setPreviewForm] = useState<ListingFormValues>({
-    title: listingForm.title,
-    description: listingForm.description,
-    price: listingForm.price,
-    category: listingForm.category,
-    location: listingForm.location,
-    images: listingForm.images,
-    condition: listingForm.condition,
-  });
-
-  useEffect(() => {
-    setPreviewForm({
-      title: listingForm.title,
-      description: listingForm.description,
-      price: listingForm.price,
-      category: listingForm.category,
-      location: listingForm.location,
-      images: listingForm.images,
-      condition: listingForm.condition,
-    });
-  }, [listingForm]);
-
-  const updatePreviewField = (updates: Partial<ListingFormValues>) => {
-    setPreviewForm(prev => ({ ...prev, ...updates }));
-  };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -86,35 +61,26 @@ export function NewListingRoute({
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
 
-    const nextImages = files.map(file => URL.createObjectURL(file));
-    updatePreviewField({ images: [...previewForm.images, ...nextImages] });
     handleImageUpload(event);
   };
 
   const handleDraftImageRemove = (index: number) => {
-    updatePreviewField({ images: previewForm.images.filter((_, i) => i !== index) });
     handleImageRemove(index);
   };
 
   const handlePreviewTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    updatePreviewField({ title: value });
     handleListingTitleChange(event);
   };
 
   const handlePreviewDescriptionChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = event.target.value;
-    updatePreviewField({ description: value });
     handleListingDescriptionChange(event);
   };
 
   const handlePreviewSelectChange = (field: 'price' | 'category' | 'location', value: string) => {
-    updatePreviewField({ [field]: value } as Partial<ListingFormValues>);
     handleListingSelectChange(field, value);
   };
 
   const handlePreviewConditionChange = (condition: ListingFormValues['condition']) => {
-    updatePreviewField({ condition });
     handleConditionChange(condition);
   };
 
@@ -144,7 +110,7 @@ export function NewListingRoute({
                   <input
                     id="title"
                     type="text"
-                    value={previewForm.title || ''}
+                    value={listingForm.title || ''}
                     onChange={handlePreviewTitleChange}
                     placeholder="e.g. Apple iPhone 14 in excellent condition"
                     name="title"
@@ -161,7 +127,7 @@ export function NewListingRoute({
                   <label htmlFor="description" className="block text-sm font-medium text-slate-700 mb-2">Description</label>
                   <textarea
                     id="description"
-                    value={previewForm.description || ''}
+                    value={listingForm.description || ''}
                     onChange={handlePreviewDescriptionChange}
                     placeholder="Describe the item, features and condition clearly."
                     name="description"
@@ -181,7 +147,7 @@ export function NewListingRoute({
                       id="price"
                       name="price"
                       type="text"
-                      value={previewForm.price}
+                      value={listingForm.price}
                       onChange={e => handlePreviewSelectChange('price', e.target.value)}
                       placeholder="0"
                       className={`w-full rounded-3xl border bg-slate-50 px-5 py-4 text-[16px] sm:text-lg outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 ${listingValidationErrors.price ? 'border-red-300' : 'border-slate-200'}`}
@@ -196,7 +162,7 @@ export function NewListingRoute({
                           key={option}
                           type="button"
                           onClick={() => handlePreviewConditionChange(option)}
-                          className={`rounded-3xl border px-4 py-3 text-sm font-medium transition ${previewForm.condition === option ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'}`}
+                          className={`rounded-3xl border px-4 py-3 text-sm font-medium transition ${listingForm.condition === option ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'}`}
                         >
                           {option}
                         </button>
@@ -211,7 +177,7 @@ export function NewListingRoute({
                     <select
                       id="category"
                       name="category"
-                      value={previewForm.category}
+                      value={listingForm.category}
                       onChange={e => handlePreviewSelectChange('category', e.target.value)}
                       className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-[16px] outline-none transition focus:border-emerald-500"
                     >
@@ -224,7 +190,7 @@ export function NewListingRoute({
                     <select
                       id="location"
                       name="location"
-                      value={previewForm.location}
+                      value={listingForm.location}
                       onChange={e => handlePreviewSelectChange('location', e.target.value)}
                       className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-[16px] outline-none transition focus:border-emerald-500"
                     >
@@ -257,9 +223,9 @@ export function NewListingRoute({
               </div>
 
               {listingValidationErrors.images && <p className="mt-3 text-sm text-red-600">{listingValidationErrors.images}</p>}
-              {previewForm.images.length > 0 && (
+              {listingForm.images.length > 0 && (
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                  {previewForm.images.map((img, index) => (
+                  {listingForm.images.map((img, index) => (
                     <div key={index} className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
                       <img src={img} alt={`preview-${index}`} className="h-40 w-full object-cover" />
                       <button type="button" onClick={() => handleDraftImageRemove(index)} className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-600 shadow-md hover:bg-slate-100">
@@ -279,21 +245,21 @@ export function NewListingRoute({
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400 mb-4">Listing preview</div>
               <div className="rounded-3xl overflow-hidden bg-slate-100">
-                {previewForm.images.length > 0 ? (
-                  <img src={previewForm.images[0]} alt="Preview" className="h-64 w-full object-cover" />
+                {listingForm.images.length > 0 ? (
+                  <img src={listingForm.images[0]} alt="Preview" className="h-64 w-full object-cover" />
                 ) : (
                   <div className="flex h-64 items-center justify-center text-slate-400">Image preview appears here</div>
                 )}
               </div>
               <div className="mt-5 space-y-3">
-                <div className="text-lg font-semibold text-slate-900">{previewForm.title || 'Your listing title'}</div>
-                <div className="text-2xl font-semibold text-slate-900">₦{previewForm.price ? Number(previewForm.price).toLocaleString() : '0'}</div>
+                <div className="text-lg font-semibold text-slate-900">{listingForm.title || 'Your listing title'}</div>
+                <div className="text-2xl font-semibold text-slate-900">₦{listingForm.price ? Number(listingForm.price).toLocaleString() : '0'}</div>
                 <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.24em] text-slate-500">
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2">{previewForm.condition}</span>
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2">{previewForm.category}</span>
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2">{previewForm.location}</span>
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2">{listingForm.condition}</span>
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2">{listingForm.category}</span>
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2">{listingForm.location}</span>
                 </div>
-                <p className="text-sm leading-6 text-slate-600">{previewForm.description || 'A quick summary of your listing will show here while you build it.'}</p>
+                <p className="text-sm leading-6 text-slate-600">{listingForm.description || 'A quick summary of your listing will show here while you build it.'}</p>
               </div>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

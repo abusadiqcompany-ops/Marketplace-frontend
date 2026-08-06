@@ -1665,7 +1665,6 @@ function MarketConnectApp() {
         handleImageDrop={handleImageDrop}
         handleImageRemove={handleImageRemove}
         saveListing={saveListing}
-        setListingForm={setListingForm}
         navigate={navigate}
         listingSubmitting={listingSubmitting}
         listingSuccess={listingSuccess}
