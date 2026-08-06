@@ -879,6 +879,7 @@ function MarketConnectApp() {
     setActiveChat({ ...conv, listingId: conv.listingId, chatId });
     setChatMessages(chatMsgs);
     setShowChat(true);
+    setNewMessage('');
     navigateTo('messages');
   };
 
@@ -1511,7 +1512,7 @@ function MarketConnectApp() {
       return;
     }
     if (listing.sellerId === currentUser.id) {
-      alert("This is your own listing.");
+      addNotification('You cannot message yourself from your own listing.', 'warning');
       return;
     }
 
@@ -1713,6 +1714,15 @@ function MarketConnectApp() {
                 });
                 setShowReportModal(true);
               }} className="w-full sm:w-auto px-6 py-3 rounded-3xl bg-amber-600 text-white text-sm font-semibold">Report this seller</button>
+              <button onClick={() => {
+                if (!currentUser) {
+                  navigate(LOGIN_PATH);
+                  return;
+                }
+                if (sellerListings[0]) {
+                  contactSeller(sellerListings[0]);
+                }
+              }} className="w-full sm:w-auto px-6 py-3 rounded-3xl bg-emerald-600 text-white text-sm font-semibold">Message seller</button>
               <button onClick={() => navigate(`/listing/${sellerListings[0]?.id}`)} className="w-full sm:w-auto px-6 py-3 rounded-3xl border border-slate-300 text-slate-700 text-sm font-semibold">View first listing</button>
             </div>
           </div>
