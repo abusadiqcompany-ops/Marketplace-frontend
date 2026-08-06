@@ -16,7 +16,6 @@ interface MarketplaceShellProps {
   groupedNotifications: Record<string, AppNotification[]>;
   activeTab: string;
   onNavigate: (tab: string) => void;
-  onOpenCreateListing: () => void;
   onOpenNotifications: () => void;
   onToggleNotificationsMenu: () => void;
   onMarkAllNotificationsRead: () => void;
@@ -43,7 +42,6 @@ export function MarketplaceShell({
   groupedNotifications,
   activeTab,
   onNavigate,
-  onOpenCreateListing,
   onOpenNotifications,
   onToggleNotificationsMenu,
   onMarkAllNotificationsRead,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Listing, User as UserType } from '../types';
@@ -25,6 +25,7 @@ type NewListingRouteProps = {
   handleImageDrop: (event: React.DragEvent<HTMLDivElement>) => void;
   handleImageRemove: (index: number) => void;
   saveListing: () => Promise<void>;
+  resetListingForm: () => void;
   navigate: ReturnType<typeof useNavigate>;
   listingSubmitting: boolean;
   listingSuccess: string | null;
@@ -51,6 +52,8 @@ export function NewListingRoute({
   listingValidationErrors,
 }: NewListingRouteProps) {
   const conditions = ['New', 'Like New', 'Used', 'Refurbished'] as const;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -60,28 +63,29 @@ export function NewListingRoute({
   const handleDraftImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
-
     handleImageUpload(event);
+    event.target.value = '';
   };
 
   const handleDraftImageRemove = (index: number) => {
     handleImageRemove(index);
   };
 
-  const handlePreviewTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    handleListingTitleChange(event);
+  const openImagePicker = () => {
+    fileInputRef.current?.click();
   };
 
-  const handlePreviewDescriptionChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    handleListingDescriptionChange(event);
+  const handleDropzoneClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('label, input')) return;
+    openImagePicker();
   };
 
-  const handlePreviewSelectChange = (field: 'price' | 'category' | 'location', value: string) => {
-    handleListingSelectChange(field, value);
-  };
-
-  const handlePreviewConditionChange = (condition: ListingFormValues['condition']) => {
-    handleConditionChange(condition);
+  const handleDropzoneKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openImagePicker();
+    }
   };
 
   return (
@@ -111,7 +115,7 @@ export function NewListingRoute({
                     id="title"
                     type="text"
                     value={listingForm.title || ''}
-                    onChange={handlePreviewTitleChange}
+                    onChange={handleListingTitleChange}
                     placeholder="e.g. Apple iPhone 14 in excellent condition"
                     name="title"
                     spellCheck={true}
@@ -128,7 +132,7 @@ export function NewListingRoute({
                   <textarea
                     id="description"
                     value={listingForm.description || ''}
-                    onChange={handlePreviewDescriptionChange}
+                    onChange={handleListingDescriptionChange}
                     placeholder="Describe the item, features and condition clearly."
                     name="description"
                     spellCheck={true}
@@ -148,7 +152,7 @@ export function NewListingRoute({
                       name="price"
                       type="text"
                       value={listingForm.price}
-                      onChange={e => handlePreviewSelectChange('price', e.target.value)}
+                      onChange={e => handleListingSelectChange('price', e.target.value)}
                       placeholder="0"
                       className={`w-full rounded-3xl border bg-slate-50 px-5 py-4 text-[16px] sm:text-lg outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 ${listingValidationErrors.price ? 'border-red-300' : 'border-slate-200'}`}
                     />
@@ -161,7 +165,7 @@ export function NewListingRoute({
                         <button
                           key={option}
                           type="button"
-                          onClick={() => handlePreviewConditionChange(option)}
+                          onClick={() => handleConditionChange(option)}
                           className={`rounded-3xl border px-4 py-3 text-sm font-medium transition ${listingForm.condition === option ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'}`}
                         >
                           {option}
@@ -178,7 +182,7 @@ export function NewListingRoute({
                       id="category"
                       name="category"
                       value={listingForm.category}
-                      onChange={e => handlePreviewSelectChange('category', e.target.value)}
+                      onChange={e => handleListingSelectChange('category', e.target.value)}
                       className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-[16px] outline-none transition focus:border-emerald-500"
                     >
                       {['Electronics','Fashion','Furniture','Vehicles','Food & Drinks','Real Estate','Services','Agriculture','Sports','Books','Health & Beauty','Pharmercy','Home & Garden','Others'].map(cat => <option key={cat} value={cat}>{cat}</option>)}
@@ -191,7 +195,7 @@ export function NewListingRoute({
                       id="location"
                       name="location"
                       value={listingForm.location}
-                      onChange={e => handlePreviewSelectChange('location', e.target.value)}
+                      onChange={e => handleListingSelectChange('location', e.target.value)}
                       className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-[16px] outline-none transition focus:border-emerald-500"
                     >
                       {['Lagos','Abuja','Port Harcourt','Kano','Ibadan','Enugu','Kaduna','Benin City','Abeokuta','Owerri','Jos','Akure','Ilorin','Uyo','Maiduguri','Sokoto','Katsina','Bauchi','Gombe','Yola'].map(loc => <option key={loc} value={loc}>{loc}</option>)}
@@ -211,14 +215,43 @@ export function NewListingRoute({
                 </div>
                 <div className="text-xs uppercase tracking-[0.24em] text-slate-400">Max 5 files</div>
               </div>
-              <div onDrop={handleImageDrop} onDragOver={event => event.preventDefault()} className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center transition hover:border-emerald-400 hover:bg-white cursor-pointer">
-                <label htmlFor="listingImages" className="cursor-pointer flex flex-col items-center justify-center gap-3">
+              <div
+                data-testid="image-dropzone"
+                onClick={handleDropzoneClick}
+                onDrop={event => {
+                  event.preventDefault();
+                  setIsDraggingOver(false);
+                  handleImageDrop(event);
+                }}
+                onDragOver={event => {
+                  event.preventDefault();
+                  setIsDraggingOver(true);
+                }}
+                onDragEnter={event => {
+                  event.preventDefault();
+                  setIsDraggingOver(true);
+                }}
+                onDragLeave={event => {
+                  event.preventDefault();
+                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                    setIsDraggingOver(false);
+                  }
+                }}
+                className={`rounded-3xl border border-dashed p-8 text-center transition focus:outline-none focus:ring-2 focus:ring-emerald-500/30 ${isDraggingOver ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300 bg-slate-50 hover:border-emerald-400 hover:bg-white'}`}
+              >
+                <label
+                  htmlFor="listingImages"
+                  tabIndex={0}
+                  role="button"
+                  onKeyDown={handleDropzoneKeyDown}
+                  className="flex cursor-pointer flex-col items-center justify-center gap-3"
+                >
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                     <Plus className="w-6 h-6" />
                   </div>
                   <div className="text-sm font-semibold text-slate-800">Drag & drop images here</div>
                   <div className="text-sm text-slate-500">or <span className="text-emerald-600">browse files</span></div>
-                  <input id="listingImages" name="images" multiple type="file" onChange={handleDraftImageUpload} className="hidden" accept="image/*" />
+                  <input ref={fileInputRef} id="listingImages" name="images" multiple type="file" onChange={handleDraftImageUpload} className="sr-only" accept="image/*" />
                 </label>
               </div>
 
@@ -274,7 +307,7 @@ export function NewListingRoute({
         </form>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4">
         <div className="mx-auto flex max-w-5xl flex-col-reverse gap-2 sm:flex-row sm:items-center sm:gap-3">
           <button type="button" onClick={() => navigate(-1)} className="w-full rounded-3xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold text-slate-700 hover:bg-slate-50 sm:flex-1">Cancel</button>
           <button type="button" onClick={() => void saveListing()} disabled={listingSubmitting} className="w-full rounded-3xl bg-emerald-600 px-5 py-4 text-base font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400 sm:flex-1">{listingSubmitting ? 'Publishing...' : editingListing ? 'Save changes' : 'Publish listing'}</button>

@@ -45,11 +45,11 @@ import {
 } from './api/client';
 import { setOnAuthFailure } from './api/client';
 import { getAllStates } from './data/nigerian-locations';
-import { NewListingRoute as NewListingRouteComponent } from './components/NewListingRoute';
 import { NotificationCard } from './components/NotificationCard';
 import { MarketplaceShell } from './components/MarketplaceShell';
 import { AuthPage } from './components/AuthPage';
 import { LandingPage } from './components/LandingPage';
+import { NewListingForm, type ListingFormValues } from './components/NewListingForm';
 
 interface ChatConversation {
   chatId?: string;
@@ -187,14 +187,8 @@ function MarketConnectApp() {
 
   useEffect(() => {
     const hasStoredSession = Boolean(localStorage.getItem('mc_currentUser') && localStorage.getItem('marketplace_access_token'));
-    const isListingRoute = location.pathname === '/listing/new';
-
     if (!currentUser && !hasStoredSession && location.pathname !== LOGIN_PATH && location.pathname !== '/') {
       navigate('/', { replace: true });
-      return;
-    }
-
-    if (!currentUser && hasStoredSession && isListingRoute) {
       return;
     }
 
@@ -1214,10 +1208,97 @@ function MarketConnectApp() {
     setListingValidationErrors({});
   };
 
-  const openCreateListing = () => {
-    setEditingListing(null);
-    resetListingForm();
-    navigate('/listing/new');
+  const handleNewListingPublish = async (values: ListingFormValues): Promise<boolean> => {
+    if (!currentUser) {
+      navigate(LOGIN_PATH);
+      return false;
+    }
+
+    const trimmedTitle = values.title.trim();
+    const trimmedDescription = values.description.trim();
+    const priceNum = Number(values.price);
+
+    if (!trimmedTitle) {
+      addNotification('Please add a title for your listing.', 'warning');
+      return false;
+    }
+
+    if (!Number.isFinite(priceNum) || priceNum <= 0) {
+      addNotification('Please enter a valid price greater than zero.', 'warning');
+      return false;
+    }
+
+    if (!trimmedDescription) {
+      addNotification('Please add a short description for your listing.', 'warning');
+      return false;
+    }
+
+    if (!values.category.trim()) {
+      addNotification('Please choose a category for your listing.', 'warning');
+      return false;
+    }
+
+    if (!values.location.trim()) {
+      addNotification('Please choose a location for your listing.', 'warning');
+      return false;
+    }
+
+    if (!values.images.length) {
+      addNotification('Please add at least one image to publish your listing.', 'warning');
+      return false;
+    }
+
+    const finalListing: Listing = {
+      id: `local-${Date.now()}`,
+      sellerId: currentUser.id,
+      sellerName: currentUser.name,
+      title: trimmedTitle,
+      description: trimmedDescription,
+      price: priceNum,
+      category: values.category,
+      location: values.location,
+      images: values.images.length > 0 ? values.images : ['https://picsum.photos/id/160/600/400'],
+      createdAt: new Date().toISOString(),
+      rating: 0,
+      reviewCount: 0,
+      distance: 0,
+      condition: values.condition,
+    };
+
+    try {
+      const token = localStorage.getItem('marketplace_access_token');
+      if (token) {
+        const createdListing = await createListing(
+          currentUser.id,
+          currentUser.name,
+          trimmedTitle,
+          trimmedDescription,
+          priceNum,
+          values.category,
+          values.location,
+          finalListing.images
+        );
+        const created = createdListing && createdListing.id ? createdListing : finalListing;
+        setListings(prev => [created, ...prev]);
+        notifyVerifiedSellerListing(created, currentUser);
+        addNotification('Listing published successfully!', 'success');
+        navigate(`/listing/${created.id}`);
+        return true;
+      }
+
+      setListings(prev => [finalListing, ...prev]);
+      notifyVerifiedSellerListing(finalListing, currentUser);
+      addNotification('Listing saved locally because backend auth was unavailable.', 'warning');
+      navigate(`/listing/${finalListing.id}`);
+      return true;
+    } catch (error: any) {
+      console.error('Listing publish failed:', error?.response?.data || error?.message || error);
+      setListings(prev => [finalListing, ...prev]);
+      notifyVerifiedSellerListing(finalListing, currentUser);
+      addNotification(error?.response?.data?.error || error?.message || 'Listing saved locally after a publish error.', 'warning');
+      navigate(`/listing/${finalListing.id}`);
+      return true;
+    }
   };
 
   const openEditListing = (listing: Listing) => {
@@ -1234,7 +1315,6 @@ function MarketConnectApp() {
     setListingError(null);
     setListingSuccess(null);
     setListingValidationErrors({});
-    navigate('/listing/new');
   };
 
   const handleFilesUpload = (files: FileList | null) => {
@@ -1648,29 +1728,6 @@ function MarketConnectApp() {
           ))}
         </div>
       </div>
-    );
-  };
-
-  const NewListingRoute = () => {
-    return (
-      <NewListingRouteComponent
-        currentUser={currentUser}
-        editingListing={editingListing}
-        listingForm={listingForm}
-        listingError={listingError}
-        handleListingTitleChange={handleListingTitleChange}
-        handleListingDescriptionChange={handleListingDescriptionChange}
-        handleListingSelectChange={handleListingSelectChange}
-        handleImageUpload={handleImageUpload}
-        handleImageDrop={handleImageDrop}
-        handleImageRemove={handleImageRemove}
-        saveListing={saveListing}
-        navigate={navigate}
-        listingSubmitting={listingSubmitting}
-        listingSuccess={listingSuccess}
-        handleConditionChange={handleConditionChange}
-        listingValidationErrors={listingValidationErrors}
-      />
     );
   };
 
@@ -2761,7 +2818,6 @@ function MarketConnectApp() {
       groupedNotifications={groupedNotifications}
       activeTab={activeTab}
       onNavigate={navigateTo}
-      onOpenCreateListing={openCreateListing}
       onOpenNotifications={() => { setShowNotificationsPage(true); }}
       onToggleNotificationsMenu={() => { setShowNotificationMenu(prev => !prev); setShowNotificationsPage(false); }}
       onMarkAllNotificationsRead={markAllNotificationsRead}
@@ -2776,8 +2832,7 @@ function MarketConnectApp() {
       <Routes>
             <Route path="/payment/callback" element={<PaymentCallback />} />
             <Route path="/seller/:id" element={<SellerProfileRoute />} />
-            <Route path="/listing/new" element={<NewListingRoute />} />
-            <Route path="/profile" element={
+                    <Route path="/profile" element={
               <React.Suspense fallback={<div className="pt-24 px-6">Loading profile...</div>}>
                 <ProfilePage currentUser={currentUser} onReport={() => {
                   if (!currentUser) {
@@ -2799,6 +2854,7 @@ function MarketConnectApp() {
               </React.Suspense>
             } />
             <Route path="/listing/:id" element={<ListingDetailRoute />} />
+            <Route path="/new-listing" element={<NewListingForm onCancel={() => navigate('/')} onPublish={handleNewListingPublish} />} />
             <Route path="*" element={
               <>
                 {/* DISCOVER TAB */}
@@ -2973,7 +3029,14 @@ function MarketConnectApp() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div className="font-semibold text-xl">My Listings ({myListings.length})</div>
-                  <button onClick={openCreateListing} className="flex items-center gap-2 text-sm px-4 py-2 rounded-2xl bg-emerald-600 text-white"><Plus className="w-4 h-4" /> Create New</button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/new-listing')}
+                    className="flex items-center gap-2 rounded-3xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+                  >
+                    <Plus className="h-4 w-4" />
+                    New listing
+                  </button>
                 </div>
                 {myListings.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
