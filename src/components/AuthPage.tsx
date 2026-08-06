@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ShoppingBag } from 'lucide-react';
 import type { Role } from '../types';
 
 type LoginFormState = {
@@ -50,8 +50,8 @@ export function AuthPage({
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-950 text-white flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-2xl">
         <div className="mb-10 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-white text-slate-950 mx-auto mb-4">
-            <span className="text-2xl font-bold">M</span>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-white/95 text-slate-950 mx-auto mb-4 shadow-lg shadow-emerald-900/20">
+            <ShoppingBag className="h-8 w-8" />
           </div>
           <h1 className="text-5xl font-semibold tracking-tight">MarketConnect</h1>
         </div>
@@ -65,7 +65,7 @@ export function AuthPage({
             <button
               type="button"
               onClick={() => onSwitchMode(authMode === 'login' ? 'register' : 'login')}
-              className="text-sm font-medium text-slate-500 hover:text-slate-900"
+              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-emerald-500 hover:text-emerald-600"
             >
               {authMode === 'login' ? 'Create account' : 'Sign in'}
             </button>
@@ -105,13 +105,22 @@ export function AuthPage({
                   onChange={(event) => onLoginFieldChange('password', event.target.value)}
                   className="w-full rounded-3xl border border-slate-200 bg-slate-100 px-5 py-4 text-slate-950 outline-none focus:border-emerald-500 focus:ring-emerald-500/20"
                 />
-                <button
-                  type="submit"
-                  disabled={authLoading}
-                  className="w-full rounded-3xl bg-slate-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {authLoading ? 'Signing in…' : 'Sign In'}
-                </button>
+                <div className="space-y-3">
+                  <button
+                    type="submit"
+                    disabled={authLoading}
+                    className="w-full rounded-3xl bg-slate-950 px-5 py-4 text-sm font-semibold text-white shadow-lg shadow-slate-900/10 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {authLoading ? 'Signing in…' : 'Sign In'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSwitchMode('register')}
+                    className="w-full rounded-3xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-500 hover:text-emerald-600"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </>
             ) : (
               <>
@@ -179,13 +188,22 @@ export function AuthPage({
                   <option value="buyer">Buyer</option>
                   <option value="seller">Seller</option>
                 </select>
-                <button
-                  type="submit"
-                  disabled={authLoading}
-                  className="w-full rounded-3xl bg-slate-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {authLoading ? 'Creating account…' : 'Create Account'}
-                </button>
+                <div className="space-y-3">
+                  <button
+                    type="submit"
+                    disabled={authLoading}
+                    className="w-full rounded-3xl bg-emerald-600 px-5 py-4 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {authLoading ? 'Creating account…' : 'Create Account'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSwitchMode('login')}
+                    className="w-full rounded-3xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </>
             )}
           </form>
