@@ -54,7 +54,6 @@ export function AuthPage({
             <span className="text-2xl font-bold">M</span>
           </div>
           <h1 className="text-5xl font-semibold tracking-tight">MarketConnect</h1>
-          <p className="mt-3 text-slate-400 text-lg">Sign in or register to manage listings, messages, wallets, and orders.</p>
         </div>
 
         <div className="rounded-[32px] bg-white p-8 shadow-2xl text-slate-950">
