@@ -3201,7 +3201,7 @@ function MarketConnectApp() {
                           <div className="text-sm text-slate-500">{isSeller ? `Buyer: ${order.buyerName}` : `Seller: ${order.sellerName}`}</div>
                           <div className="text-xs mt-1 text-slate-400">{new Date(order.createdAt).toLocaleDateString()}</div>
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-wrap items-center justify-start gap-2 sm:gap-4 w-full md:w-auto">
                           <div className="text-xl tabular-nums font-semibold">₦{order.price}</div>
                           <div className={`px-4 py-1 rounded-full text-xs font-medium uppercase tracking-wider ${
                             order.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
@@ -3211,9 +3211,9 @@ function MarketConnectApp() {
                           }`}>{order.status}</div>
                           
                           {isSeller && order.status === 'pending' && (
-                            <div className="flex gap-2">
-                              <button onClick={() => updateOrderStatus(order.id, 'accepted')} className="px-4 py-1.5 text-xs bg-emerald-600 text-white rounded-full flex items-center gap-1"><Check className="w-3 h-3"/> Accept</button>
-                              <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="px-4 py-1.5 text-xs border text-red-600 rounded-full flex items-center gap-1"><X className="w-3 h-3"/> Reject</button>
+                            <div className="flex flex-wrap gap-2">
+                              <button onClick={() => updateOrderStatus(order.id, 'accepted')} className="whitespace-nowrap px-4 py-1.5 text-xs bg-emerald-600 text-white rounded-full flex items-center gap-1"><Check className="w-3 h-3"/> Accept</button>
+                              <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="whitespace-nowrap px-4 py-1.5 text-xs border text-red-600 rounded-full flex items-center gap-1"><X className="w-3 h-3"/> Reject</button>
                             </div>
                           )}
                           
