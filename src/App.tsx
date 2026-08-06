@@ -186,8 +186,15 @@ function MarketConnectApp() {
   const LOGIN_PATH = '/login';
 
   useEffect(() => {
-    if (!currentUser && location.pathname !== LOGIN_PATH && location.pathname !== '/') {
+    const hasStoredSession = Boolean(localStorage.getItem('mc_currentUser') && localStorage.getItem('marketplace_access_token'));
+    const isListingRoute = location.pathname === '/listing/new';
+
+    if (!currentUser && !hasStoredSession && location.pathname !== LOGIN_PATH && location.pathname !== '/') {
       navigate('/', { replace: true });
+      return;
+    }
+
+    if (!currentUser && hasStoredSession && isListingRoute) {
       return;
     }
 
@@ -430,8 +437,11 @@ function MarketConnectApp() {
     const token = localStorage.getItem('marketplace_access_token');
 
     if (savedUser && token) {
-      // Do not restore the cached user before validating the token.
-      // The user will be set after /auth/me succeeds.
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+      } catch {
+        localStorage.removeItem('mc_currentUser');
+      }
     } else if (savedUser && !token) {
       localStorage.removeItem('mc_currentUser');
       localStorage.removeItem('mc_listings');
@@ -442,6 +452,7 @@ function MarketConnectApp() {
       localStorage.removeItem('mc_users');
       localStorage.removeItem('mc_transactions');
     }
+
     if (savedListings) setListings(JSON.parse(savedListings));
     if (savedMessages) setMessages(JSON.parse(savedMessages));
     if (savedOrders) setOrders(JSON.parse(savedOrders));
@@ -457,8 +468,10 @@ function MarketConnectApp() {
           setCurrentUser(user);
         })
         .catch(() => {
-          apiLogout();
-          setCurrentUser(null);
+          const fallbackUser = savedUser ? JSON.parse(savedUser) : null;
+          if (fallbackUser) {
+            setCurrentUser(fallbackUser);
+          }
         })
         .finally(() => {
           setAuthInitialized(true);
@@ -1260,30 +1273,22 @@ function MarketConnectApp() {
     const value = event?.currentTarget?.value ?? (event?.target as HTMLInputElement)?.value ?? '';
     setListingForm(prev => ({ ...prev, title: value }));
     setListingValidationErrors(prev => ({ ...prev, title: undefined }));
-    setListingError(null);
-    setListingSuccess(null);
   };
 
   const handleListingDescriptionChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = event?.currentTarget?.value ?? (event?.target as HTMLTextAreaElement)?.value ?? '';
     setListingForm(prev => ({ ...prev, description: value }));
     setListingValidationErrors(prev => ({ ...prev, description: undefined }));
-    setListingError(null);
-    setListingSuccess(null);
   };
 
   const handleListingSelectChange = (field: 'price' | 'category' | 'location', value: string) => {
     setListingForm(prev => ({ ...prev, [field]: value ?? '' }));
     setListingValidationErrors(prev => ({ ...prev, [field]: undefined }));
-    setListingError(null);
-    setListingSuccess(null);
   };
 
   const handleConditionChange = (condition: ListingFormValues['condition']) => {
     setListingForm(prev => ({ ...prev, condition }));
     setListingValidationErrors(prev => ({ ...prev, condition: undefined }));
-    setListingError(null);
-    setListingSuccess(null);
   };
 
   const saveListing = async () => {
