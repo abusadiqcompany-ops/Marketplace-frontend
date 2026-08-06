@@ -1039,29 +1039,6 @@ function MarketConnectApp() {
     }
   };
 
-  const sendReplyFromOtherSide = () => {
-    if (!activeChat || !currentUser) return;
-
-    const chatId = [currentUser.id, activeChat.otherUserId].sort().join('-') + 
-                   (activeChat.listingId ? `-${activeChat.listingId}` : '');
-
-    const replyText = currentUser.role === 'buyer'
-      ? `Hi! I received your message about “${activeChat.listingTitle || 'this item'}”. I’m happy to help and can answer any questions you have.`
-      : `Thanks for your message. I’ve got your request and I’m ready to help with “${activeChat.listingTitle || 'this item'}”.`;
-
-    const reply: Message = {
-      id: 'm' + Date.now() + 1,
-      chatId,
-      senderId: activeChat.otherUserId,
-      senderName: activeChat.otherUserName,
-      content: replyText,
-      timestamp: new Date().toISOString()
-    };
-
-    setMessages(prev => [...prev, reply]);
-    addNotification(`${activeChat.otherUserName} sent a reply`, 'message');
-  };
-
   // Add notification
   const addNotification = (message: string, type: string) => {
     const notif = { id: Date.now().toString(), message, type };
@@ -3142,9 +3119,6 @@ function MarketConnectApp() {
                           <input id="chat-message" name="message" value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} placeholder="Type your message..." className="flex-1 rounded-3xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white" />
                           <div className="flex gap-2">
                             <button onClick={sendMessage} className="flex items-center rounded-3xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">Send</button>
-                            <button onClick={sendReplyFromOtherSide} className="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50" disabled={!currentUser}>
-                              {currentUser?.role === 'buyer' ? 'Reply as seller' : 'Reply as buyer'}
-                            </button>
                           </div>
                         </div>
                       </div>
