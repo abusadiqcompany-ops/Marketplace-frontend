@@ -1,5 +1,6 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
+import type { Listing } from '../types';
 
 export type ListingFormValues = {
   title: string;
@@ -14,26 +15,49 @@ export type ListingFormValues = {
 type NewListingFormProps = {
   onCancel?: () => void;
   onPublish?: (values: ListingFormValues) => Promise<boolean> | boolean | void;
+  editingListing?: Listing | null;
 };
 
 const categories = ['Electronics', 'Fashion', 'Furniture', 'Vehicles', 'Food & Drinks', 'Real Estate', 'Services', 'Agriculture', 'Sports', 'Books', 'Health & Beauty', 'Pharmercy', 'Home & Garden', 'Others'];
 const locations = ['Lagos', 'Abuja', 'Port Harcourt', 'Kano', 'Ibadan', 'Enugu', 'Kaduna', 'Benin City', 'Abeokuta', 'Owerri', 'Jos', 'Akure', 'Ilorin', 'Uyo', 'Maiduguri', 'Sokoto', 'Katsina', 'Bauchi', 'Gombe', 'Yola'];
 const conditions = ['New', 'Like New', 'Used', 'Refurbished'] as const;
 
-const createInitialFormValues = (): ListingFormValues => ({
-  title: '',
-  description: '',
-  price: '',
-  category: categories[0],
-  location: locations[0],
-  images: [],
-  condition: 'New',
+const normalizeLocationValue = (location: Listing['location'] | undefined) => {
+  if (!location) return '';
+  if (typeof location === 'string') return location;
+  if (typeof location === 'object') {
+    const record = location as Record<string, unknown>;
+    if (typeof record.city === 'string' && typeof record.state === 'string') {
+      return `${record.city}, ${record.state}`;
+    }
+    if (typeof record.state === 'string') {
+      return record.state;
+    }
+    if (typeof record.country === 'string') {
+      return record.country;
+    }
+  }
+  return '';
+};
+
+const createInitialFormValues = (listing?: Listing | null): ListingFormValues => ({
+  title: listing?.title ?? '',
+  description: listing?.description ?? '',
+  price: listing?.price?.toString() ?? '',
+  category: listing?.category ?? categories[0],
+  location: normalizeLocationValue(listing?.location) || locations[0],
+  images: listing?.images ?? [],
+  condition: listing?.condition ?? 'New',
 });
 
-export function NewListingForm({ onCancel, onPublish }: NewListingFormProps) {
-  const [form, setForm] = useState<ListingFormValues>(createInitialFormValues);
+export function NewListingForm({ onCancel, onPublish, editingListing }: NewListingFormProps) {
+  const [form, setForm] = useState<ListingFormValues>(() => createInitialFormValues(editingListing));
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setForm(createInitialFormValues(editingListing));
+  }, [editingListing]);
 
   const previewPrice = useMemo(() => {
     const parsed = Number(form.price);
@@ -48,23 +72,29 @@ export function NewListingForm({ onCancel, onPublish }: NewListingFormProps) {
     setForm(prev => ({ ...prev, condition }));
   };
 
-  const handleFiles = (files: FileList | null) => {
+  const handleFiles = async (files: FileList | null) => {
     const picked = Array.from(files || []).slice(0, 5 - form.images.length);
     if (!picked.length) return;
 
-    const nextImages = picked.map(file => URL.createObjectURL(file));
+    const nextImages = await Promise.all(picked.map(file => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    })));
+
     setForm(prev => ({ ...prev, images: [...prev.images, ...nextImages] }));
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    handleFiles(event.target.files);
+    void handleFiles(event.target.files);
     event.target.value = '';
   };
 
   const handleImageDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDraggingOver(false);
-    handleFiles(event.dataTransfer.files);
+    void handleFiles(event.dataTransfer.files);
   };
 
   const removeImage = (index: number) => {
@@ -103,7 +133,7 @@ export function NewListingForm({ onCancel, onPublish }: NewListingFormProps) {
         <div className="flex-1 space-y-6">
           <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <div className="mb-6">
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Create new listing</h1>
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{editingListing ? 'Edit listing' : 'Create new listing'}</h1>
               <p className="mt-2 text-sm text-slate-500">Add your listing details, upload images, and preview how it will appear.</p>
             </div>
 
@@ -276,7 +306,7 @@ export function NewListingForm({ onCancel, onPublish }: NewListingFormProps) {
           <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row">
               <button type="button" onClick={onCancel} className="flex-1 rounded-3xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
-              <button type="button" onClick={handlePublish} className="flex-1 rounded-3xl bg-emerald-600 px-5 py-4 text-base font-semibold text-white shadow-sm hover:bg-emerald-700">Publish listing</button>
+              <button type="button" onClick={handlePublish} className="flex-1 rounded-3xl bg-emerald-600 px-5 py-4 text-base font-semibold text-white shadow-sm hover:bg-emerald-700">{editingListing ? 'Update listing' : 'Publish listing'}</button>
             </div>
           </div>
         </aside>

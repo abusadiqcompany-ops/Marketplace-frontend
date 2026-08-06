@@ -1249,7 +1249,7 @@ function MarketConnectApp() {
     }
 
     const finalListing: Listing = {
-      id: `local-${Date.now()}`,
+      id: editingListing?.id || `local-${Date.now()}`,
       sellerId: currentUser.id,
       sellerName: currentUser.name,
       title: trimmedTitle,
@@ -1258,10 +1258,10 @@ function MarketConnectApp() {
       category: values.category,
       location: values.location,
       images: values.images.length > 0 ? values.images : ['https://picsum.photos/id/160/600/400'],
-      createdAt: new Date().toISOString(),
-      rating: 0,
-      reviewCount: 0,
-      distance: 0,
+      createdAt: editingListing?.createdAt || new Date().toISOString(),
+      rating: editingListing?.rating || 0,
+      reviewCount: editingListing?.reviewCount || 0,
+      distance: editingListing?.distance || 0,
       condition: values.condition,
     };
 
@@ -1281,14 +1281,16 @@ function MarketConnectApp() {
         const created = createdListing && createdListing.id ? createdListing : finalListing;
         setListings(prev => [created, ...prev]);
         notifyVerifiedSellerListing(created, currentUser);
-        addNotification('Listing published successfully!', 'success');
+        addNotification(editingListing ? 'Listing updated successfully!' : 'Listing published successfully!', 'success');
+        setEditingListing(null);
         navigate(`/listing/${created.id}`);
         return true;
       }
 
       setListings(prev => [finalListing, ...prev]);
       notifyVerifiedSellerListing(finalListing, currentUser);
-      addNotification('Listing saved locally because backend auth was unavailable.', 'warning');
+      addNotification(editingListing ? 'Listing updated locally.' : 'Listing saved locally because backend auth was unavailable.', 'warning');
+      setEditingListing(null);
       navigate(`/listing/${finalListing.id}`);
       return true;
     } catch (error: any) {
@@ -1296,6 +1298,7 @@ function MarketConnectApp() {
       setListings(prev => [finalListing, ...prev]);
       notifyVerifiedSellerListing(finalListing, currentUser);
       addNotification(error?.response?.data?.error || error?.message || 'Listing saved locally after a publish error.', 'warning');
+      setEditingListing(null);
       navigate(`/listing/${finalListing.id}`);
       return true;
     }
@@ -1315,6 +1318,7 @@ function MarketConnectApp() {
     setListingError(null);
     setListingSuccess(null);
     setListingValidationErrors({});
+    navigate('/new-listing');
   };
 
   const handleFilesUpload = (files: FileList | null) => {
@@ -2854,7 +2858,7 @@ function MarketConnectApp() {
               </React.Suspense>
             } />
             <Route path="/listing/:id" element={<ListingDetailRoute />} />
-            <Route path="/new-listing" element={<NewListingForm onCancel={() => navigate('/')} onPublish={handleNewListingPublish} />} />
+            <Route path="/new-listing" element={<NewListingForm editingListing={editingListing} onCancel={() => { setEditingListing(null); navigate('/'); }} onPublish={handleNewListingPublish} />} />
             <Route path="*" element={
               <>
                 {/* DISCOVER TAB */}
