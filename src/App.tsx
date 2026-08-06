@@ -173,7 +173,15 @@ function MarketConnectApp() {
   };
   const [users, setUsers] = useState<UserType[]>([]);
   const [listings, setListings] = useState<Listing[]>(INITIAL_LISTINGS);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const savedMessages = localStorage.getItem('mc_messages');
+      return savedMessages ? JSON.parse(savedMessages) : [];
+    } catch {
+      return [];
+    }
+  });
   const [orders, setOrders] = useState<Order[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [deletionRequests, setDeletionRequests] = useState<AccountDeletionRequest[]>([]);
@@ -225,6 +233,7 @@ function MarketConnectApp() {
   const [showOrderModal, setShowOrderModal] = useState<Listing | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState<Order | null>(null);
   const [showReviewModal, setShowReviewModal] = useState<Order | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
 
   // Form States
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
@@ -247,6 +256,12 @@ function MarketConnectApp() {
   const [profilePhoto, setProfilePhoto] = useState<string>('');
   const [profileSaving, setProfileSaving] = useState(false);
   const prevProfileUserId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mc_messages', JSON.stringify(messages));
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -880,8 +895,27 @@ function MarketConnectApp() {
     setChatMessages(chatMsgs);
     setShowChat(true);
     setNewMessage('');
+    setIsTyping(false);
     navigateTo('messages');
   };
+
+  useEffect(() => {
+    if (!activeChat || !currentUser) return;
+
+    const chatId = activeChat.chatId || [currentUser.id, activeChat.otherUserId].sort().join('-') + (activeChat.listingId ? `-${activeChat.listingId}` : '');
+    const nextMessages = messages
+      .filter(message => message.chatId === chatId)
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    setChatMessages(nextMessages);
+  }, [messages, activeChat, currentUser]);
+
+  useEffect(() => {
+    const container = document.getElementById('chat-scroll');
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, [chatMessages, isTyping]);
 
   // Send message - simulates real-time
   const sendMessage = () => {
@@ -900,12 +934,11 @@ function MarketConnectApp() {
     };
 
     setMessages(prev => [...prev, message]);
-    setChatMessages(prev => [...prev, message]);
     setNewMessage('');
+    setIsTyping(true);
 
-    // Simulate real-time seller reply
     if (activeChat.otherUserId !== currentUser.id) {
-      setTimeout(() => {
+      window.setTimeout(() => {
         const replies = [
           "Thanks for reaching out! When would you like to meet?",
           "The item is still available. Happy to answer questions.",
@@ -922,11 +955,11 @@ function MarketConnectApp() {
           timestamp: new Date(Date.now() + 800).toISOString()
         };
         setMessages(prev => [...prev, reply]);
-        setChatMessages(prev => [...prev, reply]);
-        
-        // Notification
+        setIsTyping(false);
         addNotification(`${activeChat.otherUserName} replied to your message`, 'message');
-      }, 1400);
+      }, 1200);
+    } else {
+      window.setTimeout(() => setIsTyping(false), 600);
     }
   };
 
@@ -2997,6 +3030,13 @@ function MarketConnectApp() {
                           </div>
                         </div>
                       )) : <div className="text-center text-sm py-8 text-slate-400">Start the conversation...</div>}
+                      {isTyping && (
+                        <div className="flex justify-start">
+                          <div className="max-w-[75%] rounded-3xl border border-slate-200 bg-white px-5 py-3 text-sm text-slate-500">
+                            {activeChat?.otherUserName || 'The other person'} is typing...
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {currentUserSafe.role !== 'admin' ? (
