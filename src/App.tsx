@@ -233,7 +233,6 @@ function MarketConnectApp() {
   const [showOrderModal, setShowOrderModal] = useState<Listing | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState<Order | null>(null);
   const [showReviewModal, setShowReviewModal] = useState<Order | null>(null);
-  const [isTyping, setIsTyping] = useState(false);
 
   // Form States
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
@@ -837,16 +836,17 @@ function MarketConnectApp() {
     const convMap = new Map<string, ChatConversation>();
     
     messages.forEach(msg => {
-      const otherId = msg.senderId === currentUser.id ? 
-        messages.find(m => m.chatId === msg.chatId && m.senderId !== currentUser.id)?.senderId || '' : msg.senderId;
-      
+      const chatParts = msg.chatId.split('-');
+      const participantIds = chatParts.slice(0, 2);
+      const otherId = participantIds.find(id => id !== currentUser.id) || '';
+
       if (!otherId) return;
 
       const otherUser = users.find(u => u.id === otherId);
       if (!otherUser) return;
 
-      const chatId = msg.chatId;
-      const listing = listings.find(l => l.id === chatId.split('-')[1]);
+      const listingId = chatParts.slice(2).join('-');
+      const listing = listings.find(l => l.id === listingId);
       
       if (!convMap.has(otherId)) {
         convMap.set(otherId, {
@@ -895,7 +895,6 @@ function MarketConnectApp() {
     setChatMessages(chatMsgs);
     setShowChat(true);
     setNewMessage('');
-    setIsTyping(false);
     navigateTo('messages');
   };
 
@@ -915,45 +914,9 @@ function MarketConnectApp() {
     if (container) {
       container.scrollTop = container.scrollHeight;
     }
-  }, [chatMessages, isTyping]);
+  }, [chatMessages]);
 
-  const getAutoReply = (content: string, senderRole: Role, otherName: string, listingTitle?: string) => {
-    const normalized = content.trim().toLowerCase();
-    const title = listingTitle || 'this item';
-
-    if (senderRole === 'buyer') {
-      if (normalized.includes('hi') || normalized.includes('hello')) {
-        return `Hi! I saw your message about “${title}”. I’m happy to help and answer any questions you have.`;
-      }
-      if (normalized.includes('price') || normalized.includes('how much')) {
-        return `The price is still available. If you want, I can also share more details about the condition and pickup options.`;
-      }
-      if (normalized.includes('available') || normalized.includes('still')) {
-        return `Yes, it’s still available. I can help you with pickup or delivery arrangements.`;
-      }
-      if (normalized.includes('meet') || normalized.includes('pickup') || normalized.includes('delivery')) {
-        return `That works. I can arrange a pickup or delivery, and I’ll confirm the best option for you shortly.`;
-      }
-      return `Thanks for reaching out, ${otherName}. I’m here to help with “${title}” and I’ll get back to you shortly.`;
-    }
-
-    if (senderRole === 'seller') {
-      if (normalized.includes('hi') || normalized.includes('hello')) {
-        return `Hello! I received your message about “${title}”. I’ll make sure you get the right details.`;
-      }
-      if (normalized.includes('price') || normalized.includes('how much')) {
-        return `I can confirm the current price and any discount options if you want to proceed.`;
-      }
-      if (normalized.includes('available') || normalized.includes('still')) {
-        return `Yes, I’m still available for this listing and can help with the next step.`;
-      }
-      return `Thanks for the message. I’m reviewing your request and will follow up with the best answer for you.`;
-    }
-
-    return `Thanks for your message. I’m reviewing it now.`;
-  };
-
-  // Send message - simulates real-time
+  // Send message - real conversation flow
   const sendMessage = () => {
     const outgoingContent = newMessage.trim();
     if (!outgoingContent || !activeChat || !currentUser || currentUser.role === 'admin') return;
@@ -972,26 +935,30 @@ function MarketConnectApp() {
 
     setMessages(prev => [...prev, message]);
     setNewMessage('');
-    setIsTyping(true);
+    addNotification(`Message sent to ${activeChat.otherUserName}`, 'message');
+  };
 
-    if (activeChat.otherUserId !== currentUser.id) {
-      window.setTimeout(() => {
-        const replyText = getAutoReply(outgoingContent, currentUser.role, activeChat.otherUserName, activeChat.listingTitle);
-        const reply: Message = {
-          id: 'm' + Date.now() + 1,
-          chatId,
-          senderId: activeChat.otherUserId,
-          senderName: activeChat.otherUserName,
-          content: replyText,
-          timestamp: new Date(Date.now() + 800).toISOString()
-        };
-        setMessages(prev => [...prev, reply]);
-        setIsTyping(false);
-        addNotification(`${activeChat.otherUserName} replied to your message`, 'message');
-      }, 1200);
-    } else {
-      window.setTimeout(() => setIsTyping(false), 600);
-    }
+  const sendReplyFromOtherSide = () => {
+    if (!activeChat || !currentUser) return;
+
+    const chatId = [currentUser.id, activeChat.otherUserId].sort().join('-') + 
+                   (activeChat.listingId ? `-${activeChat.listingId}` : '');
+
+    const replyText = currentUser.role === 'buyer'
+      ? `Hi! I received your message about “${activeChat.listingTitle || 'this item'}”. I’m happy to help and can answer any questions you have.`
+      : `Thanks for your message. I’ve got your request and I’m ready to help with “${activeChat.listingTitle || 'this item'}”.`;
+
+    const reply: Message = {
+      id: 'm' + Date.now() + 1,
+      chatId,
+      senderId: activeChat.otherUserId,
+      senderName: activeChat.otherUserName,
+      content: replyText,
+      timestamp: new Date().toISOString()
+    };
+
+    setMessages(prev => [...prev, reply]);
+    addNotification(`${activeChat.otherUserName} sent a reply`, 'message');
   };
 
   // Add notification
@@ -3069,22 +3036,20 @@ function MarketConnectApp() {
                             </div>
                           </div>
                         )) : <div className="rounded-3xl border border-dashed border-slate-200 bg-white/70 px-6 py-8 text-center text-sm text-slate-400">Start the conversation...</div>}
-                        {isTyping && (
-                          <div className="flex justify-start">
-                            <div className="max-w-[80%] rounded-3xl rounded-bl-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">
-                              {activeChat?.otherUserName || 'The other person'} is typing...
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
 
                     {currentUserSafe.role !== 'admin' ? (
                       <div className="border-t border-slate-200 bg-white p-4">
-                        <div className="mx-auto flex max-w-3xl gap-3">
+                        <div className="mx-auto flex max-w-3xl flex-col gap-2 sm:flex-row">
                           <label htmlFor="chat-message" className="sr-only">Send a message</label>
                           <input id="chat-message" name="message" value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} placeholder="Type your message..." className="flex-1 rounded-3xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white" />
-                          <button onClick={sendMessage} className="flex items-center rounded-3xl bg-emerald-600 px-6 py-3 text-white shadow-sm hover:bg-emerald-700"><Send className="h-4 w-4" /></button>
+                          <div className="flex gap-2">
+                            <button onClick={sendMessage} className="flex items-center rounded-3xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">Send</button>
+                            <button onClick={sendReplyFromOtherSide} className="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50" disabled={!currentUser}>
+                              {currentUser?.role === 'buyer' ? 'Reply as seller' : 'Reply as buyer'}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ) : (
