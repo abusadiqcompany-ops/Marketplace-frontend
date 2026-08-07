@@ -1978,10 +1978,24 @@ function MarketConnectApp() {
     setDepositLoading(true);
 
     try {
-      const data = await postWalletDeposit(amount, depositMethod);
+      const callbackUrl = `${window.location.origin}/payment/callback?provider=${depositMethod}`;
+      const data = await postWalletDeposit(amount, depositMethod, callbackUrl);
       const redirectUrl = data.authorization_url || data.link || data.paymentUrl;
+      console.debug('[wallet deposit] init response', { data, redirectUrl });
       if (redirectUrl) {
-        window.location.href = redirectUrl;
+        const normalizedRedirectUrl = (() => {
+          const value = String(redirectUrl).trim();
+          if (!value) return value;
+          if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value) || value.startsWith('//')) {
+            return value;
+          }
+          const origin = window.location.origin && window.location.origin !== 'null'
+            ? window.location.origin
+            : `${window.location.protocol}//${window.location.host}`;
+          return value.startsWith('/') ? `${origin}${value}` : `${origin}/${value.replace(/^\/+/, '')}`;
+        })();
+        console.debug('[wallet deposit] redirecting to', normalizedRedirectUrl);
+        window.location.href = normalizedRedirectUrl;
         return;
       }
 

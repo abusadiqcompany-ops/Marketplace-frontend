@@ -251,10 +251,11 @@ export async function getWalletBalance() {
   }
 }
 
-export async function postWalletDeposit(amount: number, provider: 'paystack' | 'flutterwave') {
+export async function postWalletDeposit(amount: number, provider: 'paystack' | 'flutterwave', callbackUrl: string) {
   const response = await api.post('/wallet/deposit/initialize', {
     amount,
     provider,
+    callbackUrl,
   });
   return response.data;
 }
