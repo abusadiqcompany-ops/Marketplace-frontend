@@ -2265,6 +2265,14 @@ function MarketConnectApp() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    // Revoke the object URL after a short delay so the download can start
+    setTimeout(() => {
+      try {
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        // ignore
+      }
+    }, 1500);
   };
 
   const openPaymentConfirm = (order: Order | null) => {
