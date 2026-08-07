@@ -2145,12 +2145,17 @@ function MarketConnectApp() {
           const response = await verifyWalletDeposit(provider, reference);
           if (response.verified) {
             const updatedUser = await getCurrentUser();
-            const nextBalance = typeof updatedUser?.walletBalance === 'number'
-              ? updatedUser.walletBalance
-              : (walletBalance || 0) + (response.transaction?.amount || 0);
+            const returnedBalance = typeof response.balance === 'number' ? response.balance : undefined;
+            const nextBalance = typeof returnedBalance === 'number'
+              ? returnedBalance
+              : typeof updatedUser?.walletBalance === 'number'
+                ? updatedUser.walletBalance
+                : (walletBalance || 0) + (response.transaction?.amount || 0);
+
+            const nextUser = updatedUser ? { ...updatedUser, walletBalance: nextBalance } : updatedUser;
             setWalletBalance(nextBalance);
-            setCurrentUser(updatedUser ? { ...updatedUser, walletBalance: nextBalance } : updatedUser);
-            setUsers(prev => prev.map(u => (u.id === updatedUser.id ? updatedUser : u)));
+            setCurrentUser(nextUser);
+            setUsers(prev => prev.map(u => (updatedUser && u.id === updatedUser.id ? nextUser : u)));
             const walletTransactions = await getTransactionHistory(currentUser.id);
             setTransactions(walletTransactions);
             setDepositSuccess({
