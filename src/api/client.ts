@@ -50,7 +50,15 @@ const REFRESH_TOKEN_KEY = 'marketplace_refresh_token';
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem(TOKEN_KEY);
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    (config.headers as any).Authorization = `Bearer ${token}`;
+  }
+  // Debug: show resolved API base and outgoing request URL + headers
+  try {
+    const method = (config.method || '').toString().toUpperCase();
+    const fullUrl = `${config.baseURL || ''}${config.url || ''}`;
+    console.debug('[api] Request:', method, fullUrl, { headers: config.headers });
+  } catch (e) {
+    console.debug('[api] Request debug failed', e);
   }
   return config;
 });
