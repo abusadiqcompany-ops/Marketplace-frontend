@@ -2056,8 +2056,11 @@ function MarketConnectApp() {
     useEffect(() => {
       const verify = async () => {
         if (!currentUser) {
-          setStatus('error');
-          setMessage('You must be signed in to complete the payment.');
+          if (!localStorage.getItem('marketplace_access_token')) {
+            setStatus('error');
+            setMessage('You must be signed in to complete the payment.');
+            return;
+          }
           return;
         }
 
@@ -2096,10 +2099,10 @@ function MarketConnectApp() {
           if (response.verified) {
             const updatedUser = await getCurrentUser();
             const balance = await getWalletBalance();
-            const nextBalance = typeof balance === 'number'
-              ? balance
-              : typeof response.balance === 'number'
-                ? response.balance
+            const nextBalance = typeof response.balance === 'number'
+              ? response.balance
+              : typeof balance === 'number'
+                ? balance
                 : typeof updatedUser?.walletBalance === 'number'
                   ? updatedUser.walletBalance
                   : (walletBalance || 0) + (response.transaction?.amount || 0);
