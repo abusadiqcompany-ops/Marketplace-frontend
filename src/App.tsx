@@ -3103,9 +3103,9 @@ function MarketConnectApp() {
               </div>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-12">
+            <div className="flex flex-col gap-3 md:grid md:grid-cols-12 md:gap-3">
               {/* Conversations Sidebar */}
-              <div className="md:col-span-4 bg-white border border-slate-200 rounded-3xl overflow-hidden h-auto max-h-[580px] shadow-sm md:h-[580px]">
+              <div className="w-full bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm md:col-span-4 md:h-[580px]">
                 <div className="px-3 py-2.5 border-b border-slate-100 text-sm font-semibold text-slate-700">Conversations ({conversations.length})</div>
                 <div className="max-h-[calc(100vh-220px)] overflow-y-auto md:max-h-none">
                   {conversations.length > 0 ? conversations.map((conv, idx) => (
@@ -3124,7 +3124,7 @@ function MarketConnectApp() {
               </div>
 
               {/* Chat Window */}
-              <div className="md:col-span-8 bg-white border border-slate-200 rounded-3xl overflow-hidden flex flex-col h-[440px] shadow-sm md:h-[580px]">
+              <div className="w-full bg-white border border-slate-200 rounded-3xl overflow-hidden flex flex-col h-[440px] shadow-sm md:col-span-8 md:h-[580px]">
                 {showChat && activeChat ? (
                   <>
                     <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-4 py-2.5 backdrop-blur">
