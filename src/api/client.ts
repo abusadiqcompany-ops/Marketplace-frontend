@@ -626,6 +626,11 @@ export async function getSellerListings(sellerId: string) {
   return response.data;
 }
 
+export async function deleteListing(listingId: string) {
+  const response = await api.delete(`/listings/${listingId}`, { headers: authHeaders() });
+  return response.data;
+}
+
 // ============== PROFILE APIs ==============
 
 export async function getProfile() {

@@ -14,6 +14,7 @@ import {
   createListing,
   changePassword,
   getListings,
+  deleteListing as deleteListingApi,
   getUsers,
   createOrder,
   getUserOrders,
@@ -1609,10 +1610,17 @@ function MarketConnectApp() {
     }
   };
 
-  const deleteListing = (id: string) => {
+  const deleteListing = async (id: string) => {
     if (!confirm('Delete this listing permanently?')) return;
-    setListings(prev => prev.filter(l => l.id !== id));
-    addNotification('Listing removed', 'success');
+
+    try {
+      await deleteListingApi(id);
+      setListings(prev => prev.filter(l => l.id !== id));
+      addNotification('Listing removed', 'success');
+    } catch (error: any) {
+      console.error('Listing delete failed:', error);
+      addNotification(error?.response?.data?.error || 'Unable to delete listing right now.', 'error');
+    }
   };
 
   // Contact Seller -> Open Chat
