@@ -3103,26 +3103,26 @@ function MarketConnectApp() {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-12 gap-4">
+            <div className="grid md:grid-cols-12 gap-3">
               {/* Conversations Sidebar */}
-              <div className="md:col-span-4 bg-white border rounded-3xl overflow-hidden h-[580px]">
-                <div className="p-4 border-b text-sm font-medium">Conversations ({conversations.length})</div>
+              <div className="md:col-span-4 bg-white border border-slate-200 rounded-3xl overflow-hidden h-[580px] shadow-sm">
+                <div className="px-3 py-2.5 border-b border-slate-100 text-sm font-semibold text-slate-700">Conversations ({conversations.length})</div>
                 {conversations.length > 0 ? conversations.map((conv, idx) => (
-                  <button key={idx} onClick={() => loadChat(conv)} className="w-full px-3 py-2.5 text-left flex gap-3 hover:bg-slate-50 border-b last:border-none transition group">
-                    <div className="w-9 h-9 bg-slate-200 rounded-2xl overflow-hidden flex-shrink-0"><img src={users.find(u => u.id === conv.otherUserId)?.avatar} className="object-cover w-full h-full" /></div>
-                    <div className="flex-1 min-w-0 py-0.5">
-                      <div className="font-medium truncate flex justify-between items-center gap-2 text-sm leading-5">
-                        <span className="truncate">{conv.otherUserName}</span>
-                        {conv.listingTitle && <span className="font-normal text-[11px] text-emerald-600 truncate max-w-[100px]">{conv.listingTitle}</span>}
+                  <button key={idx} onClick={() => loadChat(conv)} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-slate-50 border-b border-slate-100 last:border-none transition group">
+                    <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-slate-200"><img src={users.find(u => u.id === conv.otherUserId)?.avatar} className="h-full w-full object-cover" /></div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-semibold text-slate-800">{conv.otherUserName}</span>
+                        {conv.listingTitle && <span className="shrink-0 text-[10px] font-medium text-emerald-600">{conv.listingTitle}</span>}
                       </div>
-                      <div className="text-xs text-slate-500 truncate mt-0.5">Tap to chat</div>
+                      <div className="truncate text-xs text-slate-500">Tap to chat</div>
                     </div>
                   </button>
-                )) : <div className="p-6 text-sm text-center text-slate-400">Start messaging by contacting sellers from listings.</div>}
+                )) : <div className="px-4 py-6 text-sm text-center text-slate-400">Start messaging by contacting sellers from listings.</div>}
               </div>
 
               {/* Chat Window */}
-              <div className="md:col-span-8 bg-white border rounded-3xl overflow-hidden flex flex-col h-[580px]">
+              <div className="md:col-span-8 bg-white border border-slate-200 rounded-3xl overflow-hidden flex flex-col h-[580px] shadow-sm">
                 {showChat && activeChat ? (
                   <>
                     <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-4 py-2.5 backdrop-blur">
