@@ -12,10 +12,10 @@ export default defineConfig({
   base: '/',
   server: {
     host: "0.0.0.0",
-    port: 4173,
+    port: 8080,
     proxy: {
       "/api": {
-        target: process.env.VITE_API_PROXY_TARGET || "http://127.0.0.1:3001",
+        target: process.env.VITE_API_PROXY_TARGET || "http://marketplace-backend-production-6e1f.up.railway.app",
         changeOrigin: true,
         secure: false,
       },

@@ -111,7 +111,7 @@ export function MarketplaceShell({
                   )}
                 </button>
                 {showNotificationMenu && (
-                  <div className="absolute right-0 mt-3 w-[360px] rounded-[28px] border border-slate-200 bg-white p-3 shadow-2xl">
+                  <div className="fixed left-4 right-4 top-20 z-[60] max-h-[calc(100vh-6rem)] overflow-y-auto rounded-[28px] border border-slate-200 bg-white p-3 shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:mt-3 sm:w-[360px] sm:max-h-[75vh]">
                     <div className="mb-3 flex items-center justify-between px-1">
                       <div>
                         <div className="text-sm font-semibold text-slate-900">Latest updates</div>

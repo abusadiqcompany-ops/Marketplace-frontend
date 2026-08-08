@@ -107,55 +107,21 @@ const normalizeApiUrl = (url: string): string => {
   return `https://${normalized.replace(/^\/+/, '')}`;
 };
 
-const buildInitialAppNotifications = (): AppNotification[] => {
-  const base = new Date();
-  return [
-    {
-      id: 'app-1',
-      title: 'Payment ready to confirm',
-      description: 'Your order from Emeka Electronics is waiting for final confirmation.',
-      message: 'Your order from Emeka Electronics is waiting for final confirmation.',
-      type: 'info',
-      category: 'payments',
-      timestamp: new Date(base.getTime() - 1000 * 60 * 4).toISOString(),
-      read: false,
-      actionType: 'payment',
-    },
-    {
-      id: 'app-2',
-      title: 'New message from Sarah',
-      description: 'Sarah shared a quick update about the item you requested.',
-      message: 'Sarah shared a quick update about the item you requested.',
-      type: 'success',
-      category: 'messages',
-      timestamp: new Date(base.getTime() - 1000 * 60 * 32).toISOString(),
-      read: false,
-      actionType: 'message',
-    },
-    {
-      id: 'app-3',
-      title: 'Price drop alert',
-      description: 'The wireless headset you saved is now 12% cheaper.',
-      message: 'The wireless headset you saved is now 12% cheaper.',
-      type: 'warning',
-      category: 'orders',
-      timestamp: new Date(base.getTime() - 1000 * 60 * 90).toISOString(),
-      read: true,
-      actionType: 'view',
-    },
-    {
-      id: 'app-4',
-      title: 'Trending near you',
-      description: 'A premium table lamp is moving fast in your area.',
-      message: 'A premium table lamp is moving fast in your area.',
-      type: 'success',
-      category: 'all',
-      timestamp: new Date(base.getTime() - 1000 * 60 * 60 * 26).toISOString(),
-      read: true,
-      actionType: 'view',
-    },
-  ];
+const DEMO_NOTIFICATION_IDS = new Set(['app-1', 'app-2', 'app-3', 'app-4']);
+
+const isDemoNotification = (notification: Partial<AppNotification>) => {
+  const id = notification.id ?? '';
+  if (DEMO_NOTIFICATION_IDS.has(id) || id.startsWith('live-')) return true;
+
+  const title = (notification.title || '').toLowerCase();
+  const description = (notification.description || '').toLowerCase();
+  return title === 'trending near you' && description.includes('premium table lamp');
 };
+
+const normalizeStoredAppNotifications = (notifications: AppNotification[]) =>
+  notifications.filter((notification) => !isDemoNotification(notification));
+
+const buildInitialAppNotifications = (): AppNotification[] => [];
 
 const INITIAL_LISTINGS: Listing[] = [
   { id: 'l1', sellerId: 'u2', sellerName: 'Emeka Electronics', title: 'Sony WH-1000XM5 Wireless Headphones', description: 'Noise cancelling headphones with 30-hour battery life. Perfect condition and fast delivery across Lagos.', price: 185000, category: 'Electronics', location: 'Lagos', images: ['https://picsum.photos/id/20/600/400', 'https://picsum.photos/id/180/600/400'], createdAt: '2025-01-12T10:00:00Z' },
@@ -376,7 +342,8 @@ function MarketConnectApp() {
     const stored = userStore || sharedStore || window.localStorage.getItem('mc_app_notifications');
     if (stored) {
       try {
-        return JSON.parse(stored) as AppNotification[];
+        const parsed = JSON.parse(stored) as AppNotification[];
+        return normalizeStoredAppNotifications(parsed);
       } catch {
         return buildInitialAppNotifications();
       }
@@ -417,7 +384,7 @@ function MarketConnectApp() {
       return true;
     });
 
-    setAppNotifications(relevant);
+    setAppNotifications(normalizeStoredAppNotifications(relevant));
   }, [currentUser]);
 
   useEffect(() => {
@@ -518,52 +485,6 @@ function MarketConnectApp() {
     localStorage.setItem('mc_users', JSON.stringify(users));
     localStorage.setItem('mc_transactions', JSON.stringify(transactions));
   }, [currentUser, listings, messages, orders, reviews, favorites, users, transactions]);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      const liveTemplates = [
-        {
-          title: '🔥 Trending near you',
-          description: 'A popular listing in your area just got fresh interest.',
-          type: 'success' as const,
-          category: 'all' as const,
-          actionType: 'view' as const,
-        },
-        {
-          title: '💰 Pending earnings available',
-          description: 'A recent payout is ready for your review.',
-          type: 'info' as const,
-          category: 'payments' as const,
-          actionType: 'payment' as const,
-        },
-        {
-          title: '⚡ Price dropped',
-          description: 'The item you saved is now discounted for a limited time.',
-          type: 'warning' as const,
-          category: 'orders' as const,
-          actionType: 'view' as const,
-        },
-      ];
-
-      const nextTemplate = liveTemplates[Math.floor(Math.random() * liveTemplates.length)];
-      const nextNotification: AppNotification = {
-        id: `live-${Date.now()}`,
-        title: nextTemplate.title,
-        description: nextTemplate.description,
-        message: nextTemplate.description,
-        type: nextTemplate.type,
-        category: nextTemplate.category,
-        timestamp: new Date().toISOString(),
-        read: false,
-        actionType: nextTemplate.actionType,
-      };
-
-      setAppNotifications(prev => [nextNotification, ...prev].slice(0, 12));
-      addNotification(nextTemplate.description, nextTemplate.type);
-    }, 18000);
-
-    return () => window.clearInterval(interval);
-  }, []);
 
   // Calculate unread messages
   useEffect(() => {
