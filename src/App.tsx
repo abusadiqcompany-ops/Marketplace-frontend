@@ -3108,17 +3108,17 @@ function MarketConnectApp() {
               <div className="md:col-span-4 bg-white border rounded-3xl overflow-hidden h-[580px]">
                 <div className="p-4 border-b text-sm font-medium">Conversations ({conversations.length})</div>
                 {conversations.length > 0 ? conversations.map((conv, idx) => (
-                  <button key={idx} onClick={() => loadChat(conv)} className="w-full px-5 py-4 text-left flex gap-4 hover:bg-slate-50 border-b last:border-none transition group">
-                    <div className="w-10 h-10 bg-slate-200 rounded-2xl overflow-hidden flex-shrink-0"><img src={users.find(u => u.id === conv.otherUserId)?.avatar} className="object-cover w-full h-full" /></div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate flex justify-between items-baseline">
-                        {conv.otherUserName}
-                        {conv.listingTitle && <span className="font-normal text-xs text-emerald-600 truncate max-w-[120px]"> • {conv.listingTitle}</span>}
+                  <button key={idx} onClick={() => loadChat(conv)} className="w-full px-3 py-2.5 text-left flex gap-3 hover:bg-slate-50 border-b last:border-none transition group">
+                    <div className="w-9 h-9 bg-slate-200 rounded-2xl overflow-hidden flex-shrink-0"><img src={users.find(u => u.id === conv.otherUserId)?.avatar} className="object-cover w-full h-full" /></div>
+                    <div className="flex-1 min-w-0 py-0.5">
+                      <div className="font-medium truncate flex justify-between items-center gap-2 text-sm leading-5">
+                        <span className="truncate">{conv.otherUserName}</span>
+                        {conv.listingTitle && <span className="font-normal text-[11px] text-emerald-600 truncate max-w-[100px]">{conv.listingTitle}</span>}
                       </div>
-                      <div className="text-sm text-slate-500 truncate">Tap to chat</div>
+                      <div className="text-xs text-slate-500 truncate mt-0.5">Tap to chat</div>
                     </div>
                   </button>
-                )) : <div className="p-8 text-sm text-center text-slate-400">Start messaging by contacting sellers from listings.</div>}
+                )) : <div className="p-6 text-sm text-center text-slate-400">Start messaging by contacting sellers from listings.</div>}
               </div>
 
               {/* Chat Window */}
