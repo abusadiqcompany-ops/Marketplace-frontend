@@ -1782,6 +1782,8 @@ function MarketConnectApp() {
     }
 
     const sellerListings = listings.filter(listing => listing.sellerId === seller.id);
+    const sellerLocation = normalizeListingLocation(seller.sellerLocation || seller.location || '');
+    const sellerContactEmail = seller.email || '';
 
     return (
       <div className="pt-24 max-w-7xl mx-auto px-6 pb-12">
@@ -1798,8 +1800,9 @@ function MarketConnectApp() {
                   </div>
                 </div>
                 <div className="text-slate-500 mt-2">{seller.description || 'Trusted seller on MarketConnect'}</div>
-                <div className="mt-3 text-sm text-slate-500">Location: {normalizeListingLocation(seller.sellerLocation || seller.location)}</div>
-                {seller.phone && <div className="text-sm text-slate-500">Contact: {seller.phone}</div>}
+                <div className="mt-3 text-sm text-slate-500">Location: {sellerLocation || 'Location not provided'}</div>
+                {seller.phone && <div className="text-sm text-slate-500">Phone: {seller.phone}</div>}
+                {sellerContactEmail && <div className="text-sm text-slate-500">Email: {sellerContactEmail}</div>}
               </div>
             </div>
             <div className="grid grid-cols-3 gap-4 text-center">
