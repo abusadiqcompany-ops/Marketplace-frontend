@@ -3095,18 +3095,18 @@ function MarketConnectApp() {
 
         {/* MESSAGES TAB */}
         {activeTab === 'messages' && (
-          <div className="pt-8">
-            <div className="flex items-center justify-between mb-8">
+          <div className="pt-4">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <div className="text-5xl font-semibold tracking-tight">Messages</div>
-                <p className="text-slate-600 mt-1">Connect directly with buyers and sellers</p>
+                <div className="text-4xl font-semibold tracking-tight">Messages</div>
+                <p className="text-slate-600 mt-1 text-sm">Connect directly with buyers and sellers</p>
               </div>
             </div>
 
-            <div className="grid md:grid-cols-12 gap-6">
+            <div className="grid md:grid-cols-12 gap-4">
               {/* Conversations Sidebar */}
-              <div className="md:col-span-4 bg-white border rounded-3xl overflow-hidden h-[620px]">
-                <div className="p-5 border-b text-sm font-medium">Conversations ({conversations.length})</div>
+              <div className="md:col-span-4 bg-white border rounded-3xl overflow-hidden h-[580px]">
+                <div className="p-4 border-b text-sm font-medium">Conversations ({conversations.length})</div>
                 {conversations.length > 0 ? conversations.map((conv, idx) => (
                   <button key={idx} onClick={() => loadChat(conv)} className="w-full px-5 py-4 text-left flex gap-4 hover:bg-slate-50 border-b last:border-none transition group">
                     <div className="w-10 h-10 bg-slate-200 rounded-2xl overflow-hidden flex-shrink-0"><img src={users.find(u => u.id === conv.otherUserId)?.avatar} className="object-cover w-full h-full" /></div>
@@ -3122,10 +3122,10 @@ function MarketConnectApp() {
               </div>
 
               {/* Chat Window */}
-              <div className="md:col-span-8 bg-white border rounded-3xl overflow-hidden flex flex-col h-[620px]">
+              <div className="md:col-span-8 bg-white border rounded-3xl overflow-hidden flex flex-col h-[580px]">
                 {showChat && activeChat ? (
                   <>
-                    <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur">
+                    <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-4 py-2.5 backdrop-blur">
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                           <div className="h-11 w-11 overflow-hidden rounded-full border border-slate-200 bg-slate-100">
@@ -3146,8 +3146,8 @@ function MarketConnectApp() {
                       </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_#f8fafc_0%,_#f1f5f9_100%)] p-4 sm:p-6" id="chat-scroll">
-                      <div className="mx-auto flex max-w-3xl flex-col gap-3">
+                    <div className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_#f8fafc_0%,_#f1f5f9_100%)] p-2 sm:p-3" id="chat-scroll">
+                      <div className="mx-auto flex max-w-3xl flex-col gap-2">
                         {chatMessages.length > 0 ? chatMessages.map((msg, idx) => (
                           <div key={idx} className={`flex ${msg.senderId === currentUserSafe.id ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[80%] rounded-3xl px-4 py-3 text-sm leading-6 shadow-sm ${msg.senderId === currentUserSafe.id ? 'rounded-br-md bg-slate-900 text-white' : 'rounded-bl-md border border-slate-200 bg-white text-slate-700'}`}>
@@ -3160,12 +3160,12 @@ function MarketConnectApp() {
                     </div>
 
                     {currentUserSafe.role !== 'admin' ? (
-                      <div className="border-t border-slate-200 bg-white p-4">
+                      <div className="border-t border-slate-200 bg-white p-2.5">
                         <div className="mx-auto flex max-w-3xl flex-col gap-2 sm:flex-row">
                           <label htmlFor="chat-message" className="sr-only">Send a message</label>
-                          <input id="chat-message" name="message" value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} placeholder="Type your message..." className="flex-1 rounded-3xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white" />
+                          <input id="chat-message" name="message" value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} placeholder="Type your message..." className="flex-1 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white" />
                           <div className="flex gap-2">
-                            <button onClick={sendMessage} className="flex items-center rounded-3xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">Send</button>
+                            <button onClick={sendMessage} className="flex items-center rounded-3xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">Send</button>
                           </div>
                         </div>
                       </div>
