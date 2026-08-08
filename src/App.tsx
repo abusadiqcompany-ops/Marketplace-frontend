@@ -3108,17 +3108,17 @@ function MarketConnectApp() {
               <div className="md:col-span-4 bg-white border border-slate-200 rounded-3xl overflow-hidden h-[580px] shadow-sm">
                 <div className="px-3 py-2.5 border-b border-slate-100 text-sm font-semibold text-slate-700">Conversations ({conversations.length})</div>
                 {conversations.length > 0 ? conversations.map((conv, idx) => (
-                  <button key={idx} onClick={() => loadChat(conv)} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-slate-50 border-b border-slate-100 last:border-none transition group">
-                    <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-slate-200"><img src={users.find(u => u.id === conv.otherUserId)?.avatar} className="h-full w-full object-cover" /></div>
+                  <button key={idx} onClick={() => loadChat(conv)} className="w-full flex items-center gap-2 px-2.5 py-2 text-left hover:bg-slate-50 border-b border-slate-100 last:border-none transition group">
+                    <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-200"><img src={users.find(u => u.id === conv.otherUserId)?.avatar} className="h-full w-full object-cover" /></div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-1.5">
                         <span className="truncate text-sm font-semibold text-slate-800">{conv.otherUserName}</span>
-                        {conv.listingTitle && <span className="shrink-0 text-[10px] font-medium text-emerald-600">{conv.listingTitle}</span>}
+                        {conv.listingTitle && <span className="shrink-0 text-[9px] font-medium text-emerald-600">{conv.listingTitle}</span>}
                       </div>
-                      <div className="truncate text-xs text-slate-500">Tap to chat</div>
+                      <div className="truncate text-[11px] text-slate-500">Tap to chat</div>
                     </div>
                   </button>
-                )) : <div className="px-4 py-6 text-sm text-center text-slate-400">Start messaging by contacting sellers from listings.</div>}
+                )) : <div className="px-3 py-5 text-sm text-center text-slate-400">Start messaging by contacting sellers from listings.</div>}
               </div>
 
               {/* Chat Window */}
