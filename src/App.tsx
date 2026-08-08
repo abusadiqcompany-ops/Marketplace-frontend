@@ -1801,8 +1801,13 @@ function MarketConnectApp() {
                 </div>
                 <div className="text-slate-500 mt-2">{seller.description || 'Trusted seller on MarketConnect'}</div>
                 <div className="mt-3 text-sm text-slate-500">Location: {sellerLocation || 'Location not provided'}</div>
-                {seller.phone && <div className="text-sm text-slate-500">Phone: {seller.phone}</div>}
-                {sellerContactEmail && <div className="text-sm text-slate-500">Email: {sellerContactEmail}</div>}
+                {(seller.phone || sellerContactEmail) && (
+                  <div className="mt-2 text-sm text-slate-600">
+                    {seller.phone && <span>Phone: {seller.phone}</span>}
+                    {seller.phone && sellerContactEmail ? <span className="mx-2">•</span> : null}
+                    {sellerContactEmail && <span>Email: {sellerContactEmail}</span>}
+                  </div>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-3 gap-4 text-center">
