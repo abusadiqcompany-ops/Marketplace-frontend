@@ -89,24 +89,13 @@ export const MessagesPage = ({
 
   return (
     <div className="pt-4 w-full" tabIndex={0} ref={containerRef} onKeyDown={handleKeyDown}>
-      <div className="px-4 pb-3 flex items-end justify-between gap-4">
-        <div>
-          <div className="text-3xl font-semibold">Messages</div>
-          <p className="text-slate-600 mt-1 text-sm">Connect with buyers and sellers</p>
-        </div>
-        {activeChat && (
-          <button
-            type="button"
-            onClick={onCloseConversation}
-            className="text-sm text-slate-500 hover:text-slate-900"
-          >
-            Close chat
-          </button>
-        )}
+      <div className="px-4 pb-3">
+        <div className="text-3xl font-semibold">Messages</div>
+        <p className="text-slate-600 mt-1 text-sm">Connect with buyers and sellers</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)]">
+        <div className={`bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm ${activeChat ? 'hidden lg:block' : 'block'}`}>
           <div className="px-4 py-4 border-b border-slate-100 text-sm font-semibold">Conversations</div>
           <div className="max-h-[calc(100vh-180px)] overflow-y-auto">
             {conversations.length > 0 ? (
@@ -158,11 +147,20 @@ export const MessagesPage = ({
         </div>
 
         {activeChat ? (
-          <div className="bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col overflow-hidden">
+          <div className="bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col overflow-hidden min-h-[calc(100vh-180px)]">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
-              <div>
-                <div className="text-base font-semibold">{activeChat.otherUserName}</div>
-                {activeChat.listingTitle && <div className="text-sm text-slate-500 truncate">{activeChat.listingTitle}</div>}
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={onCloseConversation}
+                  className="inline-flex items-center justify-center h-9 w-9 rounded-2xl border border-slate-200 text-slate-600 hover:bg-slate-50"
+                >
+                  ←
+                </button>
+                <div>
+                  <div className="text-base font-semibold">{activeChat.otherUserName}</div>
+                  {activeChat.listingTitle && <div className="text-sm text-slate-500 truncate">{activeChat.listingTitle}</div>}
+                </div>
               </div>
               <div className="text-xs text-slate-400">{activeChat.chatId ? formatTimestamp(messages.find(m => m.chatId === activeChat.chatId)?.timestamp || undefined) : ''}</div>
             </div>
