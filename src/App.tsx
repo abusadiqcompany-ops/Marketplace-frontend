@@ -815,7 +815,9 @@ function MarketConnectApp() {
       const listing = listings.find(l => l.id === listingId);
       
       if (!convMap.has(otherId)) {
+        const chatId = [currentUser.id, otherId].sort().join('-') + (listing?.id ? `-${listing.id}` : '');
         convMap.set(otherId, {
+          chatId,
           otherUserId: otherId,
           otherUserName: otherUser.name,
           listingId: listing?.id,
@@ -830,7 +832,9 @@ function MarketConnectApp() {
       if (!convMap.has(otherId)) {
         const other = users.find(u => u.id === otherId);
         if (other) {
+          const chatId = [currentUser.id, otherId].sort().join('-') + (order.listingId ? `-${order.listingId}` : '');
           convMap.set(otherId, {
+            chatId,
             otherUserId: otherId,
             otherUserName: other.name,
             listingId: order.listingId,
@@ -2970,6 +2974,16 @@ function MarketConnectApp() {
                   currentUser={currentUser}
                   chatLastRead={chatLastRead}
                   markChatAsRead={markChatAsRead}
+                  activeChat={activeChat}
+                  chatMessages={chatMessages}
+                  newMessage={newMessage}
+                  onChangeMessage={setNewMessage}
+                  onSendMessage={sendMessage}
+                  onCloseConversation={() => {
+                    setShowChat(false);
+                    setActiveChat(null);
+                    setChatMessages([]);
+                  }}
                   timestampLocale={navigator.language}
                   timestampTimeZone={Intl.DateTimeFormat().resolvedOptions().timeZone}
                   onOpenConversation={(conv: any) => loadChat(conv)}
