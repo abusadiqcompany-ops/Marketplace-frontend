@@ -1121,17 +1121,41 @@ function MarketConnectApp() {
     const sharedStorageKey = 'mc_portal_notifications_all';
     const userStorageKey = currentUser ? `mc_portal_notifications_${currentUser.id}` : 'mc_portal_notifications_guest';
 
+    const readStoredNotifications = (storageKey: string) => {
+      const storedValue = localStorage.getItem(storageKey);
+      if (!storedValue) return [] as PortalNotification[];
+      try {
+        return JSON.parse(storedValue) as PortalNotification[];
+      } catch {
+        return [] as PortalNotification[];
+      }
+    };
+
+    const mergeNotifications = (existing: PortalNotification[], incoming: PortalNotification[]) => {
+      const merged = [...incoming, ...existing];
+      const seen = new Set<string>();
+      return merged.filter(item => {
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      }).slice(0, 25);
+    };
+
     const persistStored = (storageKey: string, next: PortalNotification[]) => {
       localStorage.setItem(storageKey, JSON.stringify(next));
     };
 
     setPortalNotifications(prev => {
       const next = [notification, ...prev].slice(0, 25);
-      persistStored(sharedStorageKey, next);
+      const sharedNext = mergeNotifications(readStoredNotifications(sharedStorageKey), next);
+      persistStored(sharedStorageKey, sharedNext);
+
       if (targetUserId && targetUserId !== 'all') {
-        persistStored(`mc_portal_notifications_${targetUserId}`, next);
+        const targetNext = mergeNotifications(readStoredNotifications(`mc_portal_notifications_${targetUserId}`), next);
+        persistStored(`mc_portal_notifications_${targetUserId}`, targetNext);
       } else {
-        persistStored(userStorageKey, next);
+        const currentNext = mergeNotifications(readStoredNotifications(userStorageKey), next);
+        persistStored(userStorageKey, currentNext);
       }
       return next;
     });
@@ -1150,11 +1174,14 @@ function MarketConnectApp() {
 
     setAppNotifications(prev => {
       const next = [appNotification, ...prev].slice(0, 20);
-      localStorage.setItem('mc_app_notifications_all', JSON.stringify(next));
+      const sharedNext = mergeNotifications(readStoredNotifications('mc_app_notifications_all'), next as any);
+      localStorage.setItem('mc_app_notifications_all', JSON.stringify(sharedNext));
       if (targetUserId && targetUserId !== 'all') {
-        localStorage.setItem(`mc_app_notifications_${targetUserId}`, JSON.stringify(next));
+        const targetNext = mergeNotifications(readStoredNotifications(`mc_app_notifications_${targetUserId}`), next as any);
+        localStorage.setItem(`mc_app_notifications_${targetUserId}`, JSON.stringify(targetNext));
       } else {
-        localStorage.setItem(userStorageKey.replace('mc_portal_notifications_', 'mc_app_notifications_'), JSON.stringify(next));
+        const currentNext = mergeNotifications(readStoredNotifications(userStorageKey.replace('mc_portal_notifications_', 'mc_app_notifications_')), next as any);
+        localStorage.setItem(userStorageKey.replace('mc_portal_notifications_', 'mc_app_notifications_'), JSON.stringify(currentNext));
       }
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('marketconnect:notifications-updated'));
@@ -3776,7 +3803,7 @@ function MarketConnectApp() {
                             <button onClick={() => setAdminVerificationTargetId(user.id)} className="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs border border-slate-200" title="Set verification fee and badge">
                               <Shield className="w-3.5 h-3.5" />
                             </button>
-                            <button onClick={() => adminVerifyMembership(user)} disabled={verifyingUserId === user.id || user.verified || user.verificationRequestStatus === 'pending'} className="px-3 py-1.5 rounded-full bg-emerald-600 text-white text-xs disabled:opacity-60">{verifyingUserId === user.id ? 'Processing…' : user.verified ? 'Verified' : 'Approve'}</button>
+                            <button onClick={() => adminVerifyMembership(user)} disabled={verifyingUserId === user.id || user.verified} className="px-3 py-1.5 rounded-full bg-emerald-600 text-white text-xs disabled:opacity-60">{verifyingUserId === user.id ? 'Processing…' : user.verified ? 'Verified' : 'Approve'}</button>
                             <button onClick={() => adminDeleteUser(user.id)} className="text-red-500 text-xs">Remove</button>
                           </div>
                         </td>
