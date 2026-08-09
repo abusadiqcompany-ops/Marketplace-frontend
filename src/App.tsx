@@ -265,6 +265,8 @@ function MarketConnectApp() {
   const [profileForm, setProfileForm] = useState<Partial<UserType>>({});
   const [profilePhoto, setProfilePhoto] = useState<string>('');
   const [profileSaving, setProfileSaving] = useState(false);
+  const [profileRefreshToken, setProfileRefreshToken] = useState(0);
+  const [verificationRefreshToken, setVerificationRefreshToken] = useState(0);
   const prevProfileUserId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -2539,6 +2541,11 @@ function MarketConnectApp() {
     setProfileForm(prev => ({ ...prev, ...updatedUser }));
   }, []);
 
+  const refreshProfileView = useCallback(() => {
+    setProfileRefreshToken(prev => prev + 1);
+    setVerificationRefreshToken(prev => prev + 1);
+  }, []);
+
   const updateProfile = async () => {
     if (!currentUser) return;
 
@@ -2716,9 +2723,11 @@ function MarketConnectApp() {
       };
 
       setUsers(prev => prev.map(item => item.id === user.id ? approvedUser : item));
+      setVerificationRefreshToken(prev => prev + 1);
       if (currentUser?.id === user.id) {
         refreshCurrentUserVerificationState(approvedUser);
       }
+      refreshProfileView();
       setVerificationMessage(`${user.name} has been approved as a verified member.`);
       addPortalNotification({
         title: 'Verification approved',
@@ -3029,7 +3038,7 @@ function MarketConnectApp() {
       onLogout={logout}
       onOpenProfile={() => navigateTo('profile')}
     >
-      <Routes>
+      <Routes key={verificationRefreshToken}>
             <Route path="/payment/callback" element={<PaymentCallback />} />
             <Route path="/seller/:id" element={<SellerProfileRoute />} />
             <Route path="/messages" element={
@@ -3066,7 +3075,7 @@ function MarketConnectApp() {
             } />
                     <Route path="/profile" element={
               <React.Suspense fallback={<div className="pt-24 px-6">Loading profile...</div>}>
-                <ProfilePage currentUser={currentUser} onReport={() => {
+                <ProfilePage currentUser={currentUser} profileRefreshToken={profileRefreshToken} onReport={() => {
                   if (!currentUser) {
                     navigate(LOGIN_PATH);
                     return;

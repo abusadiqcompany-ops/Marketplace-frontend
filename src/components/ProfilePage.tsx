@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react';
 
 interface ProfilePageProps {
   currentUser?: User | null;
+  profileRefreshToken?: number;
   onReport?: () => void;
 }
 
@@ -12,7 +13,7 @@ const NIGERIAN_STATES = [
   'Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','Gombe','Imo','Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara','FCT'
 ];
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport }) => {
+export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRefreshToken = 0, onReport }) => {
   const formatLocationValue = (value: unknown) => {
     if (!value) return '';
     if (typeof value === 'string') return value;
@@ -119,7 +120,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
       }
     };
     load();
-  }, [currentUser]);
+  }, [currentUser, profileRefreshToken]);
 
   const onFieldChange = (key: string, value: any) => {
     dirtyRef.current = true;
