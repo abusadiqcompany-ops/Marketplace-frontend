@@ -803,7 +803,8 @@ function MarketConnectApp() {
     const convMap = new Map<string, ChatConversation>();
     
     messages.forEach(msg => {
-      const chatParts = msg.chatId.split('-');
+      const chatId = msg.chatId;
+      const chatParts = chatId.split('-');
       const participantIds = chatParts.slice(0, 2);
       const otherId = participantIds.find(id => id !== currentUser.id) || '';
 
@@ -812,16 +813,15 @@ function MarketConnectApp() {
       const otherUser = users.find(u => u.id === otherId);
       if (!otherUser) return;
 
-      const listingId = chatParts.slice(2).join('-');
-      const listing = listings.find(l => l.id === listingId);
+      const listingId = chatParts.slice(2).join('-') || undefined;
+      const listing = listingId ? listings.find(l => l.id === listingId) : undefined;
       
-      if (!convMap.has(otherId)) {
-        const chatId = [currentUser.id, otherId].sort().join('-') + (listing?.id ? `-${listing.id}` : '');
-        convMap.set(otherId, {
+      if (!convMap.has(chatId)) {
+        convMap.set(chatId, {
           chatId,
           otherUserId: otherId,
           otherUserName: otherUser.name,
-          listingId: listing?.id,
+          listingId,
           listingTitle: listing?.title
         });
       }
@@ -830,11 +830,11 @@ function MarketConnectApp() {
     // Also add from orders
     myOrders.forEach(order => {
       const otherId = order.buyerId === currentUser.id ? order.sellerId : order.buyerId;
-      if (!convMap.has(otherId)) {
+      const chatId = [currentUser.id, otherId].sort().join('-') + (order.listingId ? `-${order.listingId}` : '');
+      if (!convMap.has(chatId)) {
         const other = users.find(u => u.id === otherId);
         if (other) {
-          const chatId = [currentUser.id, otherId].sort().join('-') + (order.listingId ? `-${order.listingId}` : '');
-          convMap.set(otherId, {
+          convMap.set(chatId, {
             chatId,
             otherUserId: otherId,
             otherUserName: other.name,

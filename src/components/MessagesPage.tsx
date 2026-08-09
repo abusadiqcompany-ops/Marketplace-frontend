@@ -212,9 +212,18 @@ export const MessagesPage = ({
                   const isMine = message.senderId === currentUser?.id;
                   return (
                     <div key={message.id} className={`max-w-[85%] ${isMine ? 'ml-auto text-right' : 'mr-auto text-left'}`}>
-                      <div className={`inline-flex flex-col gap-1 rounded-3xl px-4 py-3 text-sm ${isMine ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-900'}`}>
+                      <div className={`inline-flex flex-col gap-2 rounded-3xl px-4 py-3 text-sm ${isMine ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-900'}`}>
                         <div className="font-medium">{message.senderName}</div>
-                        <div>{message.content}</div>
+                        {message.image ? (
+                          <img
+                            src={message.image}
+                            alt="message attachment"
+                            className="max-h-72 w-full rounded-3xl object-cover"
+                          />
+                        ) : null}
+                        {message.content ? (
+                          <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                        ) : null}
                         <div className="text-[11px] text-slate-400 mt-1">{formatTimestamp(message.timestamp)}</div>
                       </div>
                     </div>
