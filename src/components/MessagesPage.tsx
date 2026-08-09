@@ -88,6 +88,8 @@ export const MessagesPage = ({
     return sorted[sorted.length - 1]?.content || null;
   };
 
+  const activeChatUser = activeChat ? users.find(u => u.id === activeChat.otherUserId) : undefined;
+
   return (
     <div className="pt-4 w-full" tabIndex={0} ref={containerRef} onKeyDown={handleKeyDown}>
       <div className="px-4 pb-3">
@@ -160,9 +162,20 @@ export const MessagesPage = ({
                 >
                   ←
                 </button>
-                <div>
-                  <div className="text-base font-semibold">{activeChat.otherUserName}</div>
-                  {activeChat.listingTitle && <div className="text-sm text-slate-500 truncate">{activeChat.listingTitle}</div>}
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center">
+                    {activeChatUser?.avatar ? (
+                      <img src={activeChatUser.avatar} alt={activeChat.otherUserName} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-10 w-10 rounded-full bg-slate-300 flex items-center justify-center text-slate-500">
+                        <User className="w-5 h-5" />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-base font-semibold">{activeChat.otherUserName}</div>
+                    {activeChat.listingTitle && <div className="text-sm text-slate-500 truncate">{activeChat.listingTitle}</div>}
+                  </div>
                 </div>
               </div>
               <div className="text-xs text-slate-400">{activeChat.chatId ? formatTimestamp(messages.find(m => m.chatId === activeChat.chatId)?.timestamp || undefined) : ''}</div>
