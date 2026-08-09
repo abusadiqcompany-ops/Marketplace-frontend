@@ -212,6 +212,7 @@ function MarketConnectApp() {
   const [activeChat, setActiveChat] = useState<ChatConversation | null>(null);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [chatImage, setChatImage] = useState<string | null>(null);
   const [chatLastRead, setChatLastRead] = useState<Record<string, string>>(() => {
     if (typeof window === 'undefined') return {};
     try {
@@ -867,6 +868,7 @@ function MarketConnectApp() {
     setChatMessages(chatMsgs);
     setShowChat(true);
     setNewMessage('');
+    setChatImage(null);
     navigateTo('messages');
 
     // mark as read locally
@@ -952,7 +954,7 @@ function MarketConnectApp() {
   // Send message - real conversation flow
   const sendMessage = async () => {
     const outgoingContent = newMessage.trim();
-    if (!outgoingContent || !activeChat || !currentUser || currentUser.role === 'admin') return;
+    if ((!outgoingContent && !chatImage) || !activeChat || !currentUser || currentUser.role === 'admin') return;
 
     const chatId = [currentUser.id, activeChat.otherUserId].sort().join('-') +
                    (activeChat.listingId ? `-${activeChat.listingId}` : '');
@@ -963,12 +965,14 @@ function MarketConnectApp() {
       senderId: currentUser.id,
       senderName: currentUser.name,
       content: outgoingContent,
+      image: chatImage ?? undefined,
       timestamp: new Date().toISOString()
     };
 
     setMessages(prev => [...prev, message]);
     setChatMessages(prev => [...prev, message]);
     setNewMessage('');
+    setChatImage(null);
     addNotification(`Message sent to ${activeChat.otherUserName}`, 'message');
 
     const token = getAccessToken();
@@ -985,15 +989,15 @@ function MarketConnectApp() {
           senderId: currentUser.id,
           senderName: currentUser.name,
           content: outgoingContent,
+          image: chatImage,
           recipientId: activeChat.otherUserId,
           listingId: activeChat.listingId,
         }),
       });
 
-      if (!response.ok) throw new Error('Unable to save remote message');
-      const remoteMessage = await response.json() as Message;
-      setMessages(prev => [...prev.filter(item => item.id !== message.id), remoteMessage]);
-      setChatMessages(prev => [...prev.filter(item => item.id !== message.id), remoteMessage]);
+      if (!response.ok) {
+        console.warn('[chat] Remote sync failed, status', response.status);
+      }
     } catch (error) {
       console.warn('[chat] Remote sync failed, staying local.', error);
     }
@@ -2976,6 +2980,8 @@ function MarketConnectApp() {
                   markChatAsRead={markChatAsRead}
                   activeChat={activeChat}
                   chatMessages={chatMessages}
+                  chatImage={chatImage}
+                  onSelectChatImage={(value: string | null) => setChatImage(value)}
                   newMessage={newMessage}
                   onChangeMessage={setNewMessage}
                   onSendMessage={sendMessage}
@@ -2983,6 +2989,7 @@ function MarketConnectApp() {
                     setShowChat(false);
                     setActiveChat(null);
                     setChatMessages([]);
+                    setChatImage(null);
                   }}
                   onOpenChatUserProfile={() => {
                     if (!activeChat) return;

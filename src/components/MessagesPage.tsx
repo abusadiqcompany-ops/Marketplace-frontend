@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User } from 'lucide-react';
+import { User, ArrowRight, ImagePlus } from 'lucide-react';
 import type { User as UserType, Message } from '../types';
 
 export const MessagesPage = ({
@@ -11,6 +11,8 @@ export const MessagesPage = ({
   markChatAsRead,
   activeChat,
   chatMessages,
+  chatImage,
+  onSelectChatImage,
   newMessage,
   onChangeMessage,
   onSendMessage,
@@ -28,6 +30,8 @@ export const MessagesPage = ({
   markChatAsRead?: (chatId?: string) => void;
   activeChat?: { chatId?: string; otherUserId: string; otherUserName: string; listingId?: string; listingTitle?: string } | null;
   chatMessages: Message[];
+  chatImage?: string | null;
+  onSelectChatImage: (value: string | null) => void;
   newMessage: string;
   onChangeMessage: (value: string) => void;
   onSendMessage: () => void;
@@ -87,10 +91,26 @@ export const MessagesPage = ({
     const msgs = messages.filter(m => m.chatId === chatId);
     if (!msgs.length) return null;
     const sorted = msgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    return sorted[sorted.length - 1]?.content || null;
+    const lastMessage = sorted[sorted.length - 1];
+    if (!lastMessage) return null;
+    if (lastMessage.content) return lastMessage.content;
+    if (lastMessage.image) return 'Photo';
+    return null;
   };
 
   const activeChatUser = activeChat ? users.find(u => u.id === activeChat.otherUserId) : undefined;
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const pickImage = () => {
+    fileInputRef.current?.click();
+  };
+
+  const onImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const previewUrl = URL.createObjectURL(file);
+    onSelectChatImage(previewUrl);
+  };
 
   return (
     <div className="pt-4 w-full" tabIndex={0} ref={containerRef} onKeyDown={handleKeyDown}>
@@ -205,21 +225,46 @@ export const MessagesPage = ({
               )}
             </div>
             <div className="border-t border-slate-100 px-4 py-4">
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(event) => onChangeMessage(event.target.value)}
-                  placeholder="Write a message..."
-                  className="flex-1 rounded-3xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-                />
-                <button
-                  type="button"
-                  onClick={onSendMessage}
-                  className="rounded-3xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
-                >
-                  Send
-                </button>
+              <div className="flex flex-col gap-3">
+                {chatImage ? (
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <img src={chatImage} alt="attachment preview" className="h-14 w-14 rounded-3xl object-cover" />
+                      <div>
+                        <div className="text-sm font-semibold">Photo ready to send</div>
+                        <div className="text-xs text-slate-500">Tap send or remove</div>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => onSelectChatImage(null)} className="text-sm text-red-500">Remove</button>
+                  </div>
+                ) : null}
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={pickImage}
+                    className="inline-flex items-center justify-center h-12 w-12 rounded-3xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    aria-label="Attach photo"
+                  >
+                    <ImagePlus className="h-5 w-5" />
+                  </button>
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onImageChange} />
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(event) => onChangeMessage(event.target.value)}
+                    placeholder="Write a message..."
+                    className="flex-1 rounded-3xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={onSendMessage}
+                    className="inline-flex h-12 w-12 items-center justify-center rounded-3xl bg-emerald-600 text-white hover:bg-emerald-700"
+                    aria-label="Send message"
+                  >
+                    <ArrowRight className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
