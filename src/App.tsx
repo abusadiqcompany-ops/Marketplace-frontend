@@ -2931,7 +2931,7 @@ function MarketConnectApp() {
             <Route path="/seller/:id" element={<SellerProfileRoute />} />
             <Route path="/messages" element={
               <React.Suspense fallback={<div className="pt-24 px-6">Loading messages...</div>}>
-                <MessagesPage conversations={conversations} users={users} onOpenConversation={(conv: any) => loadChat(conv)} />
+                <MessagesPage conversations={conversations} users={users} messages={messages} onOpenConversation={(conv: any) => loadChat(conv)} />
               </React.Suspense>
             } />
                     <Route path="/profile" element={
