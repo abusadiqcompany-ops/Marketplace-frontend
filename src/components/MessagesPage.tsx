@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { User } from 'lucide-react';
 import type { User as UserType, Message } from '../types';
 
 export const MessagesPage = ({
@@ -122,7 +123,9 @@ export const MessagesPage = ({
                       {user?.avatar ? (
                         <img src={user.avatar} alt={conv.otherUserName} className="h-full w-full object-cover" />
                       ) : (
-                        <div className="h-9 w-9 bg-slate-300 rounded-full" />
+                        <div className="h-9 w-9 rounded-full bg-slate-300 flex items-center justify-center text-slate-500">
+                          <User className="w-4 h-4" />
+                        </div>
                       )}
                     </div>
                     <div className="min-w-0 flex-1 flex flex-col justify-center">
