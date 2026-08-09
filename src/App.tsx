@@ -103,7 +103,10 @@ const MessagesPage = React.lazy(() => import('./components/MessagesPage').then(m
 const normalizeApiUrl = (url: string): string => {
   const trimmed = url.trim();
   if (!trimmed) return '';
-  const normalized = trimmed.replace(/\/$/, '');
+  // remove trailing slash
+  let normalized = trimmed.replace(/\/$/, '');
+  // strip a trailing '/api' segment to avoid duplicate /api/api in requests
+  normalized = normalized.replace(/\/api$/i, '');
   if (/^https?:\/\//i.test(normalized)) return normalized;
   return `https://${normalized.replace(/^\/+/, '')}`;
 };
@@ -209,6 +212,29 @@ function MarketConnectApp() {
   const [activeChat, setActiveChat] = useState<ChatConversation | null>(null);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [chatLastRead, setChatLastRead] = useState<Record<string, string>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = localStorage.getItem('mc_chat_last_read');
+      return raw ? JSON.parse(raw) as Record<string,string> : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem('mc_chat_last_read', JSON.stringify(chatLastRead));
+    } catch {
+      // ignore
+    }
+  }, [chatLastRead]);
+
+  const markChatAsRead = (chatId?: string) => {
+    if (!chatId) return;
+    setChatLastRead(prev => ({ ...prev, [chatId]: new Date().toISOString() }));
+  };
   const [showOrderModal, setShowOrderModal] = useState<Listing | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState<Order | null>(null);
   const [showReviewModal, setShowReviewModal] = useState<Order | null>(null);
@@ -820,7 +846,10 @@ function MarketConnectApp() {
   const conversations = getConversations();
 
   const loadChat = useCallback((conv: ChatConversation) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      navigate(LOGIN_PATH);
+      return;
+    }
 
     const chatId = currentUser.role === 'admin' && conv.chatId
       ? conv.chatId
@@ -835,6 +864,9 @@ function MarketConnectApp() {
     setShowChat(true);
     setNewMessage('');
     navigateTo('messages');
+
+    // mark as read locally
+    markChatAsRead(chatId);
 
     const token = getAccessToken();
     if (!token) return;
@@ -2931,7 +2963,17 @@ function MarketConnectApp() {
             <Route path="/seller/:id" element={<SellerProfileRoute />} />
             <Route path="/messages" element={
               <React.Suspense fallback={<div className="pt-24 px-6">Loading messages...</div>}>
-                <MessagesPage conversations={conversations} users={users} messages={messages} onOpenConversation={(conv: any) => loadChat(conv)} />
+                <MessagesPage
+                  conversations={conversations}
+                  users={users}
+                  messages={messages}
+                  currentUser={currentUser}
+                  chatLastRead={chatLastRead}
+                  markChatAsRead={markChatAsRead}
+                  timestampLocale={navigator.language}
+                  timestampTimeZone={Intl.DateTimeFormat().resolvedOptions().timeZone}
+                  onOpenConversation={(conv: any) => loadChat(conv)}
+                />
               </React.Suspense>
             } />
                     <Route path="/profile" element={
