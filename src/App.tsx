@@ -2476,12 +2476,12 @@ function MarketConnectApp() {
     }
 
     if (user.verified) {
-      return { label: 'Verified Member', pillClass: 'bg-blue-100 text-blue-700' };
-    }
-
-    if (user.verificationRequestStatus === 'pending' || user.verificationRequestStatus === 'approved' || user.verificationBadgeType) {
-      const label = user.verificationBadgeType === 'verified_seller' ? 'Verified Seller' : 'Active Member';
-      return { label, pillClass: 'bg-amber-100 text-amber-700' };
+      const label = user.verificationBadgeType === 'verified_seller'
+        ? 'Verified Seller'
+        : user.verificationBadgeType === 'active_member'
+          ? 'Active Member'
+          : 'Verified Member';
+      return { label, pillClass: 'bg-emerald-100 text-emerald-700' };
     }
 
     return { label: 'Pending Verification', pillClass: 'bg-amber-100 text-amber-700' };

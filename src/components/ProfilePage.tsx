@@ -239,7 +239,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
   if (!profile) return <div className="pt-24 px-6">Unable to load profile. Please sign in again.</div>;
 
   const isSeller = profile.role === 'seller';
-  const badgeText = isSeller ? '✦ VERIFIED SELLER' : '✦ ACTIVE MEMBER';
+  const isVerified = Boolean(profile?.verified);
+  const badgeText = isVerified ? (isSeller ? '✦ VERIFIED SELLER' : '✦ ACTIVE MEMBER') : null;
   const summaryLabel = isSeller ? 'Store summary' : 'Personal information';
 
   return (
@@ -262,9 +263,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
                 <div className="text-sm text-white/80 mt-1 break-all">{profile.email}</div>
                 <div className="mt-3 max-w-xl text-sm leading-6 text-slate-200"></div>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#3a7d44] bg-[#2b6b3b]/20 text-sm">
-                    <span className="text-[#3a7d44]">{badgeText}</span>
-                  </div>
+                  {badgeText ? (
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#3a7d44] bg-[#2b6b3b]/20 text-sm">
+                      <span className="text-[#3a7d44]">{badgeText}</span>
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-300 bg-white/10 text-sm text-slate-200">
+                      <span>Pending Verification</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
