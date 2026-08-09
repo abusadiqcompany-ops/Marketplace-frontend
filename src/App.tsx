@@ -409,7 +409,7 @@ function MarketConnectApp() {
     const relevant = merged.filter(notification => {
       if (seen.has(notification.id)) return false;
       seen.add(notification.id);
-      return true;
+      return notificationMatchesRecipient(notification, activeUser);
     });
 
     setAppNotifications(normalizeStoredAppNotifications(relevant));
@@ -764,28 +764,46 @@ function MarketConnectApp() {
 
       messages.forEach(msg => {
         const chatId = msg.chatId;
+        const chatParts = chatId.split('-');
+        const participantIds = chatParts.slice(0, 2);
+        const listing = listings.find(l => chatParts.slice(2).join('-') === l.id);
         const existing = convMap.get(chatId);
-        const listing = listings.find(l => chatId.endsWith(l.id));
 
         if (!existing) {
-          const ids = new Set<string>([msg.senderId]);
+          const ids = new Set<string>(participantIds.filter(Boolean));
           const names = new Map<string, string>([[msg.senderId, msg.senderName]]);
           convMap.set(chatId, {
             ids,
             names,
             listingId: listing?.id,
             listingTitle: listing?.title,
-            primaryId: msg.senderId,
+            primaryId: participantIds.find(id => id !== msg.senderId) || msg.senderId,
           });
           return;
         }
 
-        existing.ids.add(msg.senderId);
+        participantIds.forEach(id => existing.ids.add(id));
         existing.names.set(msg.senderId, msg.senderName);
         if (!existing.listingId && listing) {
           existing.listingId = listing.id;
           existing.listingTitle = listing.title;
         }
+      });
+
+      orders.forEach(order => {
+        const chatId = [order.buyerId, order.sellerId].sort().join('-') + (order.listingId ? `-${order.listingId}` : '');
+        if (convMap.has(chatId)) return;
+
+        convMap.set(chatId, {
+          ids: new Set<string>([order.buyerId, order.sellerId]),
+          names: new Map<string, string>([
+            [order.buyerId, order.buyerName],
+            [order.sellerId, order.sellerName],
+          ]),
+          listingId: order.listingId,
+          listingTitle: order.listingTitle,
+          primaryId: order.sellerId,
+        });
       });
 
       return Array.from(convMap.entries()).map(([chatId, data]) => {
