@@ -1120,6 +1120,7 @@ function MarketConnectApp() {
 
     const sharedStorageKey = 'mc_portal_notifications_all';
     const userStorageKey = currentUser ? `mc_portal_notifications_${currentUser.id}` : 'mc_portal_notifications_guest';
+    const shouldShowToCurrentUser = notificationMatchesRecipient(notification, currentUser);
 
     const readStoredNotifications = (storageKey: string) => {
       const storedValue = localStorage.getItem(storageKey);
@@ -1146,15 +1147,15 @@ function MarketConnectApp() {
     };
 
     setPortalNotifications(prev => {
-      const next = [notification, ...prev].slice(0, 25);
-      const sharedNext = mergeNotifications(readStoredNotifications(sharedStorageKey), next);
+      const next = shouldShowToCurrentUser ? [notification, ...prev].slice(0, 25) : prev;
+      const sharedNext = mergeNotifications(readStoredNotifications(sharedStorageKey), shouldShowToCurrentUser ? next : prev);
       persistStored(sharedStorageKey, sharedNext);
 
       if (targetUserId && targetUserId !== 'all') {
-        const targetNext = mergeNotifications(readStoredNotifications(`mc_portal_notifications_${targetUserId}`), next);
+        const targetNext = mergeNotifications(readStoredNotifications(`mc_portal_notifications_${targetUserId}`), shouldShowToCurrentUser ? next : prev);
         persistStored(`mc_portal_notifications_${targetUserId}`, targetNext);
       } else {
-        const currentNext = mergeNotifications(readStoredNotifications(userStorageKey), next);
+        const currentNext = mergeNotifications(readStoredNotifications(userStorageKey), shouldShowToCurrentUser ? next : prev);
         persistStored(userStorageKey, currentNext);
       }
       return next;
@@ -1173,14 +1174,14 @@ function MarketConnectApp() {
     };
 
     setAppNotifications(prev => {
-      const next = [appNotification, ...prev].slice(0, 20);
-      const sharedNext = mergeNotifications(readStoredNotifications('mc_app_notifications_all'), next as any);
+      const next = shouldShowToCurrentUser ? [appNotification, ...prev].slice(0, 20) : prev;
+      const sharedNext = mergeNotifications(readStoredNotifications('mc_app_notifications_all'), shouldShowToCurrentUser ? next as any : prev as any);
       localStorage.setItem('mc_app_notifications_all', JSON.stringify(sharedNext));
       if (targetUserId && targetUserId !== 'all') {
-        const targetNext = mergeNotifications(readStoredNotifications(`mc_app_notifications_${targetUserId}`), next as any);
+        const targetNext = mergeNotifications(readStoredNotifications(`mc_app_notifications_${targetUserId}`), shouldShowToCurrentUser ? next as any : prev as any);
         localStorage.setItem(`mc_app_notifications_${targetUserId}`, JSON.stringify(targetNext));
       } else {
-        const currentNext = mergeNotifications(readStoredNotifications(userStorageKey.replace('mc_portal_notifications_', 'mc_app_notifications_')), next as any);
+        const currentNext = mergeNotifications(readStoredNotifications(userStorageKey.replace('mc_portal_notifications_', 'mc_app_notifications_')), shouldShowToCurrentUser ? next as any : prev as any);
         localStorage.setItem(userStorageKey.replace('mc_portal_notifications_', 'mc_app_notifications_'), JSON.stringify(currentNext));
       }
       if (typeof window !== 'undefined') {
@@ -2532,6 +2533,12 @@ function MarketConnectApp() {
     return { label: 'Pending Verification', pillClass: 'bg-amber-100 text-amber-700' };
   };
 
+  const refreshCurrentUserVerificationState = useCallback((updatedUser?: Partial<UserType> | null) => {
+    if (!updatedUser) return;
+    setCurrentUser(prev => prev ? { ...prev, ...updatedUser } : prev);
+    setProfileForm(prev => ({ ...prev, ...updatedUser }));
+  }, []);
+
   const updateProfile = async () => {
     if (!currentUser) return;
 
@@ -2700,7 +2707,18 @@ function MarketConnectApp() {
     setVerificationMessage('Approving verification…');
 
     try {
-      setUsers(prev => prev.map(item => item.id === user.id ? { ...item, verified: true, verificationLevel: 'basic', verificationRequestStatus: 'approved' } : item));
+      const approvedUser = {
+        ...user,
+        verified: true,
+        verificationLevel: 'basic' as const,
+        verificationRequestStatus: 'approved' as const,
+        verificationBadgeType: user.verificationBadgeType || 'active_member',
+      };
+
+      setUsers(prev => prev.map(item => item.id === user.id ? approvedUser : item));
+      if (currentUser?.id === user.id) {
+        refreshCurrentUserVerificationState(approvedUser);
+      }
       setVerificationMessage(`${user.name} has been approved as a verified member.`);
       addPortalNotification({
         title: 'Verification approved',

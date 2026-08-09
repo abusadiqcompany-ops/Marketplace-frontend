@@ -64,7 +64,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
 
   useEffect(() => {
     const fallbackProfile = buildFallbackProfile(currentUser);
-    setProfile((prev: any) => (prev && prev.id === currentUser?.id ? prev : fallbackProfile));
+    setProfile((prev: any) => {
+      if (prev && prev.id === currentUser?.id) {
+        return {
+          ...prev,
+          ...fallbackProfile,
+          id: currentUser?.id ?? prev.id,
+          role: currentUser?.role ?? prev.role,
+        };
+      }
+      return fallbackProfile;
+    });
     profileUserIdRef.current = currentUser?.id ?? null;
 
     const load = async () => {
@@ -83,9 +93,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onReport 
           if (dirtyRef.current) return prev;
           return {
             ...(fallbackProfile || {}),
-            ...p,
-            id: p?.id || currentUser?.id,
-            role: p?.role || currentUser?.role,
+            ...(prev && prev.id === currentUser?.id ? prev : {}),
+            ...(p || {}),
+            id: p?.id || currentUser?.id || prev?.id,
+            role: p?.role || currentUser?.role || prev?.role,
+            verified: currentUser?.verified ?? p?.verified ?? prev?.verified,
+            verificationBadgeType: currentUser?.verificationBadgeType ?? p?.verificationBadgeType ?? prev?.verificationBadgeType,
+            verificationRequestStatus: currentUser?.verificationRequestStatus ?? p?.verificationRequestStatus ?? prev?.verificationRequestStatus,
+            verificationLevel: currentUser?.verificationLevel ?? p?.verificationLevel ?? prev?.verificationLevel,
           };
         });
       } catch (e: any) {
