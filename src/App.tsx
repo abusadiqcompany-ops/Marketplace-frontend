@@ -98,6 +98,7 @@ const NIGERIAN_BANKS = [
 ];
 
 const ProfilePage = React.lazy(() => import('./components/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const MessagesPage = React.lazy(() => import('./components/MessagesPage').then(m => ({ default: m.MessagesPage })));
 
 const normalizeApiUrl = (url: string): string => {
   const trimmed = url.trim();
@@ -2928,6 +2929,11 @@ function MarketConnectApp() {
       <Routes>
             <Route path="/payment/callback" element={<PaymentCallback />} />
             <Route path="/seller/:id" element={<SellerProfileRoute />} />
+            <Route path="/messages" element={
+              <React.Suspense fallback={<div className="pt-24 px-6">Loading messages...</div>}>
+                <MessagesPage conversations={conversations} users={users} onOpenConversation={(conv: any) => loadChat(conv)} />
+              </React.Suspense>
+            } />
                     <Route path="/profile" element={
               <React.Suspense fallback={<div className="pt-24 px-6">Loading profile...</div>}>
                 <ProfilePage currentUser={currentUser} onReport={() => {
