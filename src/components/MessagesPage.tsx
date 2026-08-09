@@ -15,6 +15,7 @@ export const MessagesPage = ({
   onChangeMessage,
   onSendMessage,
   onCloseConversation,
+  onOpenChatUserProfile,
   timestampLocale,
   timestampTimeZone,
   onOpenConversation,
@@ -31,6 +32,7 @@ export const MessagesPage = ({
   onChangeMessage: (value: string) => void;
   onSendMessage: () => void;
   onCloseConversation: () => void;
+  onOpenChatUserProfile: () => void;
   timestampLocale?: string;
   timestampTimeZone?: string;
   onOpenConversation: (conv: any) => void;
@@ -163,7 +165,11 @@ export const MessagesPage = ({
                   ←
                 </button>
                 <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={onOpenChatUserProfile}
+                    className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center hover:ring-2 hover:ring-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
                     {activeChatUser?.avatar ? (
                       <img src={activeChatUser.avatar} alt={activeChat.otherUserName} className="h-full w-full object-cover" />
                     ) : (
@@ -171,7 +177,7 @@ export const MessagesPage = ({
                         <User className="w-5 h-5" />
                       </div>
                     )}
-                  </div>
+                  </button>
                   <div>
                     <div className="text-base font-semibold">{activeChat.otherUserName}</div>
                     {activeChat.listingTitle && <div className="text-sm text-slate-500 truncate">{activeChat.listingTitle}</div>}

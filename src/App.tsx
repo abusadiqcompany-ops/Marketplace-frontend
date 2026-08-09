@@ -2984,6 +2984,10 @@ function MarketConnectApp() {
                     setActiveChat(null);
                     setChatMessages([]);
                   }}
+                  onOpenChatUserProfile={() => {
+                    if (!activeChat) return;
+                    navigate(`/seller/${encodeURIComponent(activeChat.otherUserId)}`);
+                  }}
                   timestampLocale={navigator.language}
                   timestampTimeZone={Intl.DateTimeFormat().resolvedOptions().timeZone}
                   onOpenConversation={(conv: any) => loadChat(conv)}
