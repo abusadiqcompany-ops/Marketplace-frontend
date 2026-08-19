@@ -2738,6 +2738,26 @@ function MarketConnectApp() {
     const confirmed = window.confirm(`Approve ${user.name} as ${badgeLabel}?`);
     if (!confirmed) return;
 
+    const approvedUser = {
+      ...user,
+      verified: true,
+      verificationLevel: user.verificationBadgeType === 'verified_seller' ? 'full' as const : 'basic' as const,
+      verificationRequestStatus: 'approved' as const,
+      verificationBadgeType: user.verificationBadgeType || 'active_member',
+    };
+
+    setUsers(prev => {
+      const next = prev.map(item => item.id === user.id ? approvedUser : item);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mc_users', JSON.stringify(next));
+      }
+      return next;
+    });
+
+    if (currentUser?.id === user.id) {
+      refreshCurrentUserVerificationState(approvedUser);
+    }
+
     void adminVerifyMembership(user);
   };
 
@@ -3866,10 +3886,10 @@ function MarketConnectApp() {
                         <td><span className="px-3 py-px text-xs rounded-full bg-slate-100 font-medium capitalize">{user.role}</span></td>
                         <td>
                           <div className="flex flex-col gap-1">
-                            <span className={`px-3 py-px text-xs rounded-full font-medium w-fit ${user.verified ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                              {user.verified ? 'Verified' : user.verificationRequestStatus === 'pending' ? 'Pending Payment' : 'Unverified'}
+                            <span className={`px-3 py-px text-xs rounded-full font-medium w-fit ${user.verified || user.verificationRequestStatus === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                              {user.verified || user.verificationRequestStatus === 'approved' ? 'Approved' : user.verificationRequestStatus === 'pending' ? 'Pending Payment' : 'Unverified'}
                             </span>
-                            <span className="text-[11px] text-slate-500">{user.verificationRequestStatus === 'pending' ? `${user.verificationBadgeType === 'verified_seller' ? 'Verified Seller' : 'Active Member'} • ₦${user.verificationFee}` : user.verificationLevel || 'unverified'}</span>
+                            <span className="text-[11px] text-slate-500">{user.verificationRequestStatus === 'pending' ? `${user.verificationBadgeType === 'verified_seller' ? 'Verified Seller' : 'Active Member'} • ₦${user.verificationFee}` : user.verificationLevel || (user.verificationRequestStatus === 'approved' ? 'approved' : 'unverified')}</span>
                           </div>
                         </td>
                         <td>
