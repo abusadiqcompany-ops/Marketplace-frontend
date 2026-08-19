@@ -63,6 +63,7 @@ interface ChatConversation {
 
 const CATEGORIES = [
   'Electronics',
+  'Phones & Accessories',
   'Fashion',
   'Furniture',
   'Vehicles',
@@ -2537,8 +2538,21 @@ function MarketConnectApp() {
 
   const refreshCurrentUserVerificationState = useCallback((updatedUser?: Partial<UserType> | null) => {
     if (!updatedUser) return;
-    setCurrentUser(prev => prev ? { ...prev, ...updatedUser } : prev);
+    setCurrentUser(prev => {
+      const next = prev ? { ...prev, ...updatedUser } : null;
+      if (next && typeof window !== 'undefined') {
+        localStorage.setItem('mc_currentUser', JSON.stringify(next));
+      }
+      return next;
+    });
     setProfileForm(prev => ({ ...prev, ...updatedUser }));
+    setUsers(prev => {
+      const next = prev.map(item => item.id === updatedUser.id ? { ...item, ...updatedUser } as UserType : item);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mc_users', JSON.stringify(next));
+      }
+      return next;
+    });
   }, []);
 
   const refreshProfileView = useCallback(() => {
@@ -2722,7 +2736,13 @@ function MarketConnectApp() {
         verificationBadgeType: user.verificationBadgeType || 'active_member',
       };
 
-      setUsers(prev => prev.map(item => item.id === user.id ? approvedUser : item));
+      setUsers(prev => {
+        const next = prev.map(item => item.id === user.id ? approvedUser : item);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('mc_users', JSON.stringify(next));
+        }
+        return next;
+      });
       setVerificationRefreshToken(prev => prev + 1);
       if (currentUser?.id === user.id) {
         refreshCurrentUserVerificationState(approvedUser);
@@ -3773,12 +3793,18 @@ function MarketConnectApp() {
                         const selectedUser = users.find(u => u.id === adminVerificationTargetId);
                         if (!selectedUser) return;
                         const fee = Number(adminVerificationFee) || 5000;
-                        setUsers(prev => prev.map(u => u.id === selectedUser.id ? {
-                          ...u,
-                          verificationRequestStatus: 'pending',
-                          verificationBadgeType: adminVerificationBadgeType,
-                          verificationFee: fee,
-                        } : u));
+                        setUsers(prev => {
+                          const next = prev.map(u => u.id === selectedUser.id ? {
+                            ...u,
+                            verificationRequestStatus: 'pending',
+                            verificationBadgeType: adminVerificationBadgeType,
+                            verificationFee: fee,
+                          } : u);
+                          if (typeof window !== 'undefined') {
+                            localStorage.setItem('mc_users', JSON.stringify(next));
+                          }
+                          return next;
+                        });
                         addPortalNotification({
                           title: 'Verification request sent',
                           message: `Admin has started your ${adminVerificationBadgeType === 'verified_seller' ? 'Verified Seller' : 'Active Member'} verification request. Complete the payment to proceed.`,
