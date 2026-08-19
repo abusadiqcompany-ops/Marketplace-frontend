@@ -129,8 +129,18 @@ export const MessagesPage = ({
   const onImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const previewUrl = URL.createObjectURL(file);
-    onSelectChatImage(previewUrl);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const previewUrl = typeof reader.result === 'string' ? reader.result : null;
+      onSelectChatImage(previewUrl);
+    };
+    reader.onerror = () => {
+      onSelectChatImage(null);
+    };
+    reader.readAsDataURL(file);
+
+    event.target.value = '';
   };
 
   return (
