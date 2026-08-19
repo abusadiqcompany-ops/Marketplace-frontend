@@ -2461,22 +2461,13 @@ function MarketConnectApp() {
       ]);
     });
     const csvContent = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
+    const csvDataUrl = `data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`;
     const link = document.createElement('a');
-    link.href = url;
+    link.href = csvDataUrl;
     link.setAttribute('download', `transactions-${currentUser.id}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    // Revoke the object URL after a short delay so the download can start
-    setTimeout(() => {
-      try {
-        URL.revokeObjectURL(url);
-      } catch (e) {
-        // ignore
-      }
-    }, 1500);
   };
 
   const openPaymentConfirm = (order: Order | null) => {
