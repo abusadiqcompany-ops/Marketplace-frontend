@@ -1759,7 +1759,7 @@ function MarketConnectApp() {
                       <div className="text-lg font-semibold">{seller.businessName || seller.name}</div>
                       <div className="mt-1 flex flex-wrap items-center gap-2">
                         <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${getVerificationStatus(seller).pillClass}`}>
-                          <span aria-hidden="true">✓</span>
+                          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white/70 text-[10px] font-bold leading-none shadow-sm" aria-hidden="true">✓</span>
                           {getVerificationStatus(seller).label}
                         </div>
                         <div className="text-sm text-slate-500">{normalizeListingLocation(seller.sellerLocation || seller.location)}</div>
@@ -1815,7 +1815,7 @@ function MarketConnectApp() {
                 <div className="text-4xl font-semibold">{seller.businessName || seller.name}</div>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${getVerificationStatus(seller).pillClass}`}>
-                    <span aria-hidden="true">✓</span>
+                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white/70 text-[10px] font-bold leading-none shadow-sm" aria-hidden="true">✓</span>
                     {getVerificationStatus(seller).label}
                   </div>
                 </div>
@@ -2731,6 +2731,16 @@ function MarketConnectApp() {
     }
   };
 
+  const handleAdminApprove = (user: UserType) => {
+    if (!user || user.verified) return;
+
+    const badgeLabel = user.verificationBadgeType === 'verified_seller' ? 'Verified Seller' : 'Active Member';
+    const confirmed = window.confirm(`Approve ${user.name} as ${badgeLabel}?`);
+    if (!confirmed) return;
+
+    void adminVerifyMembership(user);
+  };
+
   const adminVerifyMembership = async (user: UserType) => {
     if (!user) return;
 
@@ -2967,7 +2977,7 @@ function MarketConnectApp() {
               </button>
               {seller && (
                 <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${getVerificationStatus(seller).pillClass}`}>
-                  <span aria-hidden="true">✓</span>
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white/70 text-[10px] font-bold leading-none shadow-sm" aria-hidden="true">✓</span>
                   {getVerificationStatus(seller).label}
                 </div>
               )}
@@ -3867,7 +3877,7 @@ function MarketConnectApp() {
                             <button onClick={() => setAdminVerificationTargetId(user.id)} className="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs border border-slate-200" title="Set verification fee and badge">
                               <Shield className="w-3.5 h-3.5" />
                             </button>
-                            <button onClick={() => adminVerifyMembership(user)} disabled={verifyingUserId === user.id || user.verified} className="px-3 py-1.5 rounded-full bg-emerald-600 text-white text-xs disabled:opacity-60">{verifyingUserId === user.id ? 'Processing…' : user.verified ? 'Verified' : 'Approve'}</button>
+                            <button onClick={() => handleAdminApprove(user)} disabled={verifyingUserId === user.id || user.verified} className="px-3 py-1.5 rounded-full bg-emerald-600 text-white text-xs disabled:opacity-60">{verifyingUserId === user.id ? 'Processing…' : user.verified ? 'Verified' : 'Approve'}</button>
                             <button onClick={() => adminDeleteUser(user.id)} className="text-red-500 text-xs">Remove</button>
                           </div>
                         </td>
