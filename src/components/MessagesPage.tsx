@@ -50,6 +50,27 @@ export const MessagesPage = ({
     el.focus();
   }, []);
 
+  useEffect(() => {
+    if (!conversations.length) {
+      setSelected(0);
+      return;
+    }
+
+    const nextIndex = activeChat
+      ? conversations.findIndex(conv => {
+          if (conv.chatId && activeChat.chatId) return conv.chatId === activeChat.chatId;
+          return conv.otherUserId === activeChat.otherUserId && conv.listingId === activeChat.listingId;
+        })
+      : -1;
+
+    if (nextIndex >= 0) {
+      setSelected(nextIndex);
+      return;
+    }
+
+    setSelected(prev => Math.min(prev, conversations.length - 1));
+  }, [activeChat, conversations]);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!conversations.length) return;
     if (e.key === 'ArrowDown') {

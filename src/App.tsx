@@ -730,16 +730,22 @@ function MarketConnectApp() {
     return String(location);
   };
 
+  const normalizeLocationText = (value?: string) => {
+    if (!value) return '';
+    return value
+      .toLowerCase()
+      .replace(/\s+(state|province|territory|fct|city)/gi, '')
+      .replace(/[^a-z0-9\s,]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/,\s*/g, ', ')
+      .trim();
+  };
+
   const getExactLocationVariants = (location: unknown): { city?: string; state?: string; country?: string; combined: string[] } => {
     const combined = new Set<string>();
 
     const addVariant = (value?: string) => {
-      if (!value) return;
-      const normalized = value
-        .toLowerCase()
-        .replace(/[^a-z0-9\s,]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+      const normalized = normalizeLocationText(value);
       if (normalized) combined.add(normalized);
     };
 
@@ -759,17 +765,17 @@ function MarketConnectApp() {
       const state = typeof record.state === 'string' ? record.state : undefined;
       const country = typeof record.country === 'string' ? record.country : undefined;
 
-      result.city = city;
-      result.state = state;
-      result.country = country;
+      result.city = normalizeLocationText(city);
+      result.state = normalizeLocationText(state);
+      result.country = normalizeLocationText(country);
 
       addVariant(city);
       addVariant(state);
       addVariant(country);
 
       if (city && state) addVariant(`${city}, ${state}`);
-      if (state && country) addVariant(`${state}, ${country}`);
       if (city && country) addVariant(`${city}, ${country}`);
+      if (state && country) addVariant(`${state}, ${country}`);
     }
 
     result.combined = Array.from(combined);
@@ -782,15 +788,18 @@ function MarketConnectApp() {
 
     if (!source.combined.length || !target.combined.length) return false;
 
-    const cityMatches = Boolean(source.city && target.city && source.city.toLowerCase() === target.city.toLowerCase());
-    const stateMatches = Boolean(source.state && target.state && source.state.toLowerCase() === target.state.toLowerCase());
-    const countryMatches = Boolean(source.country && target.country && source.country.toLowerCase() === target.country.toLowerCase());
+    const sourceCity = source.city;
+    const targetCity = target.city;
+    const sourceState = source.state;
+    const targetState = target.state;
 
-    if (cityMatches) return true;
-    if (stateMatches && countryMatches && !cityMatches) return false;
+    const sameCity = Boolean(sourceCity && targetCity && sourceCity === targetCity);
+    const sameState = Boolean(sourceState && targetState && sourceState === targetState);
 
-    const directMatch = source.combined.some((value) => target.combined.includes(value));
-    return directMatch && (cityMatches || (!source.city && !target.city) || (!source.state && !target.state));
+    if (sameCity || (sameState && sourceCity && targetCity)) return true;
+    if (sameState) return true;
+
+    return source.combined.some((value) => target.combined.includes(value));
   };
 
   // Filter listings
@@ -894,13 +903,15 @@ function MarketConnectApp() {
     }
 
     const convMap = new Map<string, ChatConversation>();
-    
+
     messages.forEach(msg => {
       const chatId = msg.chatId;
       const chatParts = chatId.split('-');
       const participantIds = chatParts.slice(0, 2);
-      const otherId = participantIds.find(id => id !== currentUser.id) || '';
 
+      if (!participantIds.includes(currentUser.id)) return;
+
+      const otherId = participantIds.find(id => id !== currentUser.id) || '';
       if (!otherId) return;
 
       const otherUser = users.find(u => u.id === otherId);
@@ -908,14 +919,14 @@ function MarketConnectApp() {
 
       const listingId = chatParts.slice(2).join('-') || undefined;
       const listing = listingId ? listings.find(l => l.id === listingId) : undefined;
-      
+
       if (!convMap.has(chatId)) {
         convMap.set(chatId, {
           chatId,
           otherUserId: otherId,
           otherUserName: otherUser.name,
           listingId,
-          listingTitle: listing?.title
+          listingTitle: listing?.title,
         });
       }
     });
@@ -1239,8 +1250,9 @@ function MarketConnectApp() {
       persistStored(sharedStorageKey, sharedNext);
 
       if (targetUserId && targetUserId !== 'all') {
-        const targetNext = mergeNotifications(readStoredNotifications(`mc_portal_notifications_${targetUserId}`), shouldShowToCurrentUser ? next : prev);
-        persistStored(`mc_portal_notifications_${targetUserId}`, targetNext);
+        const targetKey = `mc_portal_notifications_${targetUserId}`;
+        const targetNext = mergeNotifications(readStoredNotifications(targetKey), [notification, ...readStoredNotifications(targetKey)]);
+        persistStored(targetKey, targetNext);
       } else {
         const currentNext = mergeNotifications(readStoredNotifications(userStorageKey), shouldShowToCurrentUser ? next : prev);
         persistStored(userStorageKey, currentNext);
@@ -1265,8 +1277,9 @@ function MarketConnectApp() {
       const sharedNext = mergeNotifications(readStoredNotifications('mc_app_notifications_all'), shouldShowToCurrentUser ? next as any : prev as any);
       localStorage.setItem('mc_app_notifications_all', JSON.stringify(sharedNext));
       if (targetUserId && targetUserId !== 'all') {
-        const targetNext = mergeNotifications(readStoredNotifications(`mc_app_notifications_${targetUserId}`), shouldShowToCurrentUser ? next as any : prev as any);
-        localStorage.setItem(`mc_app_notifications_${targetUserId}`, JSON.stringify(targetNext));
+        const targetKey = `mc_app_notifications_${targetUserId}`;
+        const targetNext = mergeNotifications(readStoredNotifications(targetKey), [appNotification, ...readStoredNotifications(targetKey)]);
+        localStorage.setItem(targetKey, JSON.stringify(targetNext));
       } else {
         const currentNext = mergeNotifications(readStoredNotifications(userStorageKey.replace('mc_portal_notifications_', 'mc_app_notifications_')), shouldShowToCurrentUser ? next as any : prev as any);
         localStorage.setItem(userStorageKey.replace('mc_portal_notifications_', 'mc_app_notifications_'), JSON.stringify(currentNext));
@@ -2105,9 +2118,15 @@ function MarketConnectApp() {
     setWalletBalance(nextBalance);
     setCurrentUser(prev => prev ? { ...prev, walletBalance: nextBalance } : prev);
     setTransactions(prev => [localTransaction, ...prev]);
-    setDepositAmount('');
-    setDepositSuccess({ provider, reference, amount });
-    setDepositStatusMessage(`Deposit completed locally for ₦${amount.toFixed(2)}.`);
+      addPortalNotification({
+        title: 'Wallet deposit successful',
+        message: `Your wallet was credited with ₦${amount.toFixed(2)} via ${provider === 'paystack' ? 'Paystack' : 'Flutterwave'}.`,
+        type: 'success',
+        targetUserId: currentUser.id,
+        targetRole: 'all',
+        relatedUserId: currentUser.id,
+        actionType: 'payment',
+      });
   };
 
   const handleDepositPayment = async () => {
@@ -2164,6 +2183,15 @@ function MarketConnectApp() {
       setWalletBalance(nextBalance);
       setCurrentUser(prev => prev ? { ...prev, walletBalance: nextBalance } : prev);
       setTransactions(prev => [transaction, ...prev]);
+      addPortalNotification({
+        title: 'Wallet deposit successful',
+        message: `Your wallet was credited with ₦${amount.toFixed(2)} via ${depositMethod === 'paystack' ? 'Paystack' : 'Flutterwave'}.`,
+        type: 'success',
+        targetUserId: currentUser.id,
+        targetRole: 'all',
+        relatedUserId: currentUser.id,
+        actionType: 'payment',
+      });
       setDepositAmount('');
       setDepositSuccess({ provider: depositMethod, reference, amount });
       setDepositStatusMessage(data.message || 'Deposit completed successfully.');
@@ -2217,6 +2245,15 @@ function MarketConnectApp() {
       setCurrentUser(prev => prev ? { ...prev, walletBalance: balance } : prev);
       const walletTransactions = await getTransactionHistory(currentUser.id);
       setTransactions(walletTransactions);
+      addPortalNotification({
+        title: 'Wallet withdrawal initiated',
+        message: `₦${amount.toFixed(2)} is being sent to ${withdrawBank}. You will receive a confirmation once the transfer is processed.`,
+        type: 'warning',
+        targetUserId: currentUser.id,
+        targetRole: 'all',
+        relatedUserId: currentUser.id,
+        actionType: 'payment',
+      });
 
       setWithdrawAmount('');
       setWithdrawBank('');
@@ -2246,6 +2283,15 @@ function MarketConnectApp() {
         setWalletBalance(nextBalance);
         setCurrentUser(prev => prev ? { ...prev, walletBalance: nextBalance } : prev);
         setTransactions(prev => [localTransaction, ...prev]);
+        addPortalNotification({
+          title: 'Wallet withdrawal completed',
+          message: `₦${amount.toFixed(2)} was sent to ${withdrawBank}.`,
+          type: 'success',
+          targetUserId: currentUser.id,
+          targetRole: 'all',
+          relatedUserId: currentUser.id,
+          actionType: 'payment',
+        });
         setWithdrawAmount('');
         setWithdrawBank('');
         setWithdrawAccountName('');
@@ -2323,6 +2369,15 @@ function MarketConnectApp() {
             setUsers(prev => prev.map(u => (updatedUser && u.id === updatedUser.id ? nextUser : u)));
             const walletTransactions = await getTransactionHistory(currentUser.id);
             setTransactions(walletTransactions);
+            addPortalNotification({
+              title: 'Wallet deposit confirmed',
+              message: `Your wallet was topped up with ₦${(response.transaction?.amount || 0).toFixed(2)} and is ready to use.`,
+              type: 'success',
+              targetUserId: currentUser.id,
+              targetRole: 'all',
+              relatedUserId: currentUser.id,
+              actionType: 'payment',
+            });
             setDepositSuccess({
               provider,
               reference,
