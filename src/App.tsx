@@ -730,6 +730,51 @@ function MarketConnectApp() {
     return String(location);
   };
 
+  const getExactLocationVariants = (location: unknown): string[] => {
+    const variants = new Set<string>();
+
+    const addVariant = (value?: string) => {
+      if (!value) return;
+      const normalized = value
+        .toLowerCase()
+        .replace(/[^a-z0-9\s,]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (normalized) variants.add(normalized);
+    };
+
+    if (typeof location === 'string') {
+      addVariant(location);
+      return Array.from(variants);
+    }
+
+    if (location && typeof location === 'object') {
+      const record = location as Record<string, unknown>;
+      addVariant(typeof record.city === 'string' ? record.city : undefined);
+      addVariant(typeof record.state === 'string' ? record.state : undefined);
+      addVariant(typeof record.country === 'string' ? record.country : undefined);
+
+      const city = typeof record.city === 'string' ? record.city : '';
+      const state = typeof record.state === 'string' ? record.state : '';
+      const country = typeof record.country === 'string' ? record.country : '';
+
+      addVariant(city && state ? `${city}, ${state}` : undefined);
+      addVariant(state && country ? `${state}, ${country}` : undefined);
+      addVariant(city && country ? `${city}, ${country}` : undefined);
+    }
+
+    return Array.from(variants);
+  };
+
+  const isNearbyLocationMatch = (sourceLocation: unknown, targetLocation: unknown) => {
+    const sourceNames = getExactLocationVariants(sourceLocation);
+    const targetNames = getExactLocationVariants(targetLocation);
+
+    if (!sourceNames.length || !targetNames.length) return false;
+
+    return sourceNames.some((sourceName) => targetNames.includes(sourceName));
+  };
+
   // Filter listings
   const filteredListings = listings.filter(listing => {
     const matchesSearch = 
@@ -957,6 +1002,18 @@ function MarketConnectApp() {
           const alreadyExists = prev.some(item => item.id === remoteMessage.id);
           return alreadyExists ? prev : [...prev, remoteMessage];
         });
+
+        if (currentUser && remoteMessage.senderId !== currentUser.id) {
+          addPortalNotification({
+            title: 'New message',
+            message: `${remoteMessage.senderName || 'Someone'} sent you a message${remoteMessage.content ? `: “${remoteMessage.content}”` : ''}.`,
+            type: 'message',
+            targetUserId: currentUser.id,
+            targetRole: 'all',
+            relatedUserId: remoteMessage.senderId,
+          });
+          addNotification(`${remoteMessage.senderName || 'Someone'} sent you a message.`, 'message');
+        }
       } catch (error) {
         console.warn('[chat] Failed to parse streamed message', error);
       }
@@ -1232,15 +1289,49 @@ function MarketConnectApp() {
 
     if (!isQualifiedSeller) return;
 
+    const listingLocation = normalizeListingLocation(listing.location);
+    const listingText = seller.businessName || seller.name;
+
     addPortalNotification({
       title: 'New verified listing',
-      message: `${seller.businessName || seller.name} just published “${listing.title}”. Check it out in the marketplace.`,
+      message: `${listingText} just published “${listing.title}” in ${listingLocation || 'your area'}. Check it out in the marketplace.`,
       type: 'listing',
       targetUserId: 'all',
       targetRole: 'all',
       relatedUserId: seller.id,
       relatedListingId: listing.id,
     });
+
+    users.forEach((user) => {
+      if (user.id === seller.id) return;
+      const matchesNearbyLocation = isNearbyLocationMatch(user.location, listing.location) || isNearbyLocationMatch(user.sellerLocation, listing.location);
+      if (!matchesNearbyLocation) return;
+
+      addPortalNotification({
+        title: 'Verified seller nearby',
+        message: `${seller.businessName || seller.name} just added a new listing nearby in ${listingLocation}.`,
+        type: 'listing',
+        targetUserId: user.id,
+        targetRole: 'all',
+        relatedUserId: seller.id,
+        relatedListingId: listing.id,
+      });
+    });
+
+    if (currentUser && currentUser.id !== seller.id) {
+      const matchesCurrentUserLocation = isNearbyLocationMatch(currentUser.location, listing.location) || isNearbyLocationMatch(currentUser.sellerLocation, listing.location);
+      if (matchesCurrentUserLocation) {
+        addPortalNotification({
+          title: 'Verified seller nearby',
+          message: `${seller.businessName || seller.name} just added a new listing nearby in ${listingLocation}.`,
+          type: 'listing',
+          targetUserId: currentUser.id,
+          targetRole: 'all',
+          relatedUserId: seller.id,
+          relatedListingId: listing.id,
+        });
+      }
+    }
   };
 
   // Auth Functions
