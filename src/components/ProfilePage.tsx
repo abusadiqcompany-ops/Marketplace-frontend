@@ -221,15 +221,21 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
       return;
     }
 
-    if (pendingAvatarPreview?.startsWith('blob:')) {
-      URL.revokeObjectURL(pendingAvatarPreview);
-    }
-
-    const previewUrl = URL.createObjectURL(f);
-    setPendingAvatarFile(f);
-    setPendingAvatarPreview(previewUrl);
-    setSavedMessage('📷 Photo selected. Tap Upload photo to save it.');
-    setTimeout(() => setSavedMessage(''), 2400);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const previewUrl = typeof reader.result === 'string' ? reader.result : null;
+      setPendingAvatarFile(f);
+      setPendingAvatarPreview(previewUrl);
+      setSavedMessage('📷 Photo selected. Tap Upload photo to save it.');
+      setTimeout(() => setSavedMessage(''), 2400);
+    };
+    reader.onerror = () => {
+      setPendingAvatarFile(null);
+      setPendingAvatarPreview(null);
+      setSavedMessage('Unable to read selected photo.');
+      setTimeout(() => setSavedMessage(''), 2400);
+    };
+    reader.readAsDataURL(f);
     e.target.value = '';
   };
 
@@ -240,9 +246,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
       setProfile((prev: any) => ({ ...prev, avatar: res.avatar }));
       setSavedMessage('✅ Avatar updated');
       setDirty(false);
-      if (pendingAvatarPreview?.startsWith('blob:')) {
-        URL.revokeObjectURL(pendingAvatarPreview);
-      }
       setPendingAvatarFile(null);
       setPendingAvatarPreview(null);
       setTimeout(() => setSavedMessage(''), 2200);
