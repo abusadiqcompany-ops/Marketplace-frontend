@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getProfile, updateProfile, getProfileStats, uploadProfileAvatar, createAccountDeletionRequest } from '../api/client';
 import { User } from '../types';
 import { Plus } from 'lucide-react';
@@ -14,6 +15,12 @@ const NIGERIAN_STATES = [
 ];
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRefreshToken = 0, onReport }) => {
+  const navigate = useNavigate();
+
+  const handleViewListings = () => {
+    navigate('/activity');
+  };
+
   const formatLocationValue = (value: unknown) => {
     if (!value) return '';
     if (typeof value === 'string') return value;
@@ -293,9 +300,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
             </div>
             <div className="w-full md:w-auto md:mt-0">
               <div className="flex flex-wrap gap-2 bg-white/10 rounded-3xl p-2">
-                <button className="px-4 py-2 rounded-2xl text-white bg-white/10">Profile</button>
-                <button className="px-4 py-2 rounded-2xl text-white/60">Listings</button>
-                <button className="px-4 py-2 rounded-2xl text-white/60">Account</button>
+                <button type="button" className="px-4 py-2 rounded-2xl text-white bg-white/10">Profile</button>
+                <button type="button" onClick={handleViewListings} className="px-4 py-2 rounded-2xl text-white/60 hover:bg-white/10">Listings</button>
+                <button type="button" className="px-4 py-2 rounded-2xl text-white/60">Account</button>
               </div>
             </div>
           </div>
@@ -402,7 +409,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
                     {avatarUploading ? 'Uploading…' : 'Upload Photo'}
                   </button>
                 )}
-                <button type="button" className="w-full p-3 rounded-lg border border-slate-200">View Listings</button>
+                <button type="button" onClick={handleViewListings} className="w-full p-3 rounded-lg border border-slate-200 hover:bg-slate-50">View Listings</button>
                 {onReport && (
                   <button type="button" onClick={onReport} className="w-full p-3 rounded-lg border border-amber-400 text-amber-700 font-semibold">
                     Report a user
