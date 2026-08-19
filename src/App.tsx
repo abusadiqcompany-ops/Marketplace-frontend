@@ -284,12 +284,7 @@ function MarketConnectApp() {
       return;
     }
 
-    if (prevProfileUserId.current === currentUser.id) {
-      return;
-    }
-
-    prevProfileUserId.current = currentUser.id;
-    setProfileForm({
+    const nextProfileForm = {
       name: currentUser.name,
       email: currentUser.email,
       phone: currentUser.phone,
@@ -298,9 +293,21 @@ function MarketConnectApp() {
       businessName: currentUser.businessName,
       description: currentUser.description,
       avatar: currentUser.avatar,
-    });
+    };
+
+    const hasUncommittedEdits = Object.keys(profileForm).length > 0 && prevProfileUserId.current === currentUser.id;
+    if (hasUncommittedEdits) {
+      return;
+    }
+
+    if (prevProfileUserId.current === currentUser.id) {
+      return;
+    }
+
+    prevProfileUserId.current = currentUser.id;
+    setProfileForm(nextProfileForm);
     setProfilePhoto(currentUser.avatar || '');
-  }, [currentUser]);
+  }, [currentUser?.id, currentUser?.name, currentUser?.email, currentUser?.phone, currentUser?.location, currentUser?.sellerLocation, currentUser?.businessName, currentUser?.description, currentUser?.avatar]);
 
   // Wallet / Payment state
   const [depositAmount, setDepositAmount] = useState('');
@@ -1751,7 +1758,8 @@ function MarketConnectApp() {
                     <div>
                       <div className="text-lg font-semibold">{seller.businessName || seller.name}</div>
                       <div className="mt-1 flex flex-wrap items-center gap-2">
-                        <div className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${getVerificationStatus(seller).pillClass}`}>
+                        <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${getVerificationStatus(seller).pillClass}`}>
+                          <span aria-hidden="true">✓</span>
                           {getVerificationStatus(seller).label}
                         </div>
                         <div className="text-sm text-slate-500">{normalizeListingLocation(seller.sellerLocation || seller.location)}</div>
@@ -1806,7 +1814,8 @@ function MarketConnectApp() {
               <div>
                 <div className="text-4xl font-semibold">{seller.businessName || seller.name}</div>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <div className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${getVerificationStatus(seller).pillClass}`}>
+                  <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${getVerificationStatus(seller).pillClass}`}>
+                    <span aria-hidden="true">✓</span>
                     {getVerificationStatus(seller).label}
                   </div>
                 </div>
@@ -2524,7 +2533,8 @@ function MarketConnectApp() {
       return { label: 'Pending Verification', pillClass: 'bg-amber-100 text-amber-700' };
     }
 
-    if (user.verified) {
+    const isApprovedStatus = user.verificationRequestStatus === 'approved' || user.verified;
+    if (isApprovedStatus) {
       const label = user.verificationBadgeType === 'verified_seller'
         ? 'Verified Seller'
         : user.verificationBadgeType === 'active_member'
@@ -2731,7 +2741,7 @@ function MarketConnectApp() {
       const approvedUser = {
         ...user,
         verified: true,
-        verificationLevel: 'basic' as const,
+        verificationLevel: user.verificationBadgeType === 'verified_seller' ? 'full' as const : 'basic' as const,
         verificationRequestStatus: 'approved' as const,
         verificationBadgeType: user.verificationBadgeType || 'active_member',
       };
@@ -2956,7 +2966,8 @@ function MarketConnectApp() {
                 {listing.sellerName}
               </button>
               {seller && (
-                <div className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${getVerificationStatus(seller).pillClass}`}>
+                <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${getVerificationStatus(seller).pillClass}`}>
+                  <span aria-hidden="true">✓</span>
                   {getVerificationStatus(seller).label}
                 </div>
               )}

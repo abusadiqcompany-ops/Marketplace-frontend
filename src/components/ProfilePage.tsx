@@ -73,13 +73,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
   useEffect(() => {
     const fallbackProfile = buildFallbackProfile(currentUser);
     setProfile((prev: any) => {
+      if (dirtyRef.current) return prev;
       if (prev && prev.id === currentUser?.id) {
-        return {
+        const next = {
           ...prev,
           ...fallbackProfile,
           id: currentUser?.id ?? prev.id,
           role: currentUser?.role ?? prev.role,
         };
+        return JSON.stringify(prev) === JSON.stringify(next) ? prev : next;
       }
       return fallbackProfile;
     });
