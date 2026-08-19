@@ -350,6 +350,11 @@ export async function verifyMembershipVerificationPayment(userId: string, provid
   return response.data;
 }
 
+export async function approveUserVerification(userId: string, badgeType: 'active_member' | 'verified_seller', verificationFee?: number) {
+  const response = await api.post(`/admin/users/${userId}/approve-verification`, { badgeType, verificationFee }, { headers: authHeaders() });
+  return response.data;
+}
+
 export async function deleteAdminUser(userId: string) {
   const response = await api.delete(`/admin/users/${userId}`, { headers: authHeaders() });
   return response.data;

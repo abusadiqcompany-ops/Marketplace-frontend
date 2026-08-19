@@ -39,6 +39,8 @@ import {
   createReport,
   resolveAdminReport,
   initializeMembershipVerificationPayment,
+  verifyMembershipVerificationPayment,
+  approveUserVerification,
   deleteAdminUser,
   deleteAdminListing,
   resolveAdminDispute,
@@ -2738,11 +2740,11 @@ function MarketConnectApp() {
     const confirmed = window.confirm(`Approve ${user.name} as ${badgeLabel}?`);
     if (!confirmed) return;
 
-    const approvedUser = {
+    const approvedUser: UserType = {
       ...user,
       verified: true,
-      verificationLevel: user.verificationBadgeType === 'verified_seller' ? 'full' as const : 'basic' as const,
-      verificationRequestStatus: 'approved' as const,
+      verificationLevel: user.verificationBadgeType === 'verified_seller' ? 'full' : 'basic',
+      verificationRequestStatus: 'approved',
       verificationBadgeType: user.verificationBadgeType || 'active_member',
     };
 
@@ -2758,7 +2760,7 @@ function MarketConnectApp() {
       refreshCurrentUserVerificationState(approvedUser);
     }
 
-    void adminVerifyMembership(user);
+    void adminVerifyMembership(approvedUser);
   };
 
   const adminVerifyMembership = async (user: UserType) => {
@@ -2768,18 +2770,24 @@ function MarketConnectApp() {
     setVerificationMessage('Approving verification…');
 
     try {
-      const approvedUser = {
+      const badgeType = user.verificationBadgeType || 'active_member';
+      const response = await approveUserVerification(user.id, badgeType, Number(user.verificationFee || 0));
+      const approvedUser: UserType = {
         ...user,
+        ...response.user,
         verified: true,
-        verificationLevel: user.verificationBadgeType === 'verified_seller' ? 'full' as const : 'basic' as const,
-        verificationRequestStatus: 'approved' as const,
-        verificationBadgeType: user.verificationBadgeType || 'active_member',
+        verificationLevel: badgeType === 'verified_seller' ? 'full' : 'basic',
+        verificationRequestStatus: 'approved',
+        verificationBadgeType: badgeType,
       };
 
       setUsers(prev => {
         const next = prev.map(item => item.id === user.id ? approvedUser : item);
         if (typeof window !== 'undefined') {
           localStorage.setItem('mc_users', JSON.stringify(next));
+          if (currentUser?.id === user.id) {
+            localStorage.setItem('mc_currentUser', JSON.stringify(approvedUser));
+          }
         }
         return next;
       });
@@ -2791,7 +2799,7 @@ function MarketConnectApp() {
       setVerificationMessage(`${user.name} has been approved as a verified member.`);
       addPortalNotification({
         title: 'Verification approved',
-        message: `Your account has been approved as ${user.verificationBadgeType === 'verified_seller' ? 'Verified Seller' : 'Active Member'}. You can now publish listings and gain more visibility.`,
+        message: `Your account has been approved as ${badgeType === 'verified_seller' ? 'Verified Seller' : 'Active Member'}. You can now publish listings and gain more visibility.`,
         type: 'success',
         targetUserId: user.id,
         targetRole: 'all',
