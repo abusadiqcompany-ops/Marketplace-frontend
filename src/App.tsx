@@ -730,8 +730,8 @@ function MarketConnectApp() {
     return String(location);
   };
 
-  const getExactLocationVariants = (location: unknown): string[] => {
-    const variants = new Set<string>();
+  const getExactLocationVariants = (location: unknown): { city?: string; state?: string; country?: string; combined: string[] } => {
+    const combined = new Set<string>();
 
     const addVariant = (value?: string) => {
       if (!value) return;
@@ -740,39 +740,57 @@ function MarketConnectApp() {
         .replace(/[^a-z0-9\s,]/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
-      if (normalized) variants.add(normalized);
+      if (normalized) combined.add(normalized);
+    };
+
+    const result: { city?: string; state?: string; country?: string; combined: string[] } = {
+      combined: [],
     };
 
     if (typeof location === 'string') {
       addVariant(location);
-      return Array.from(variants);
+      result.combined = Array.from(combined);
+      return result;
     }
 
     if (location && typeof location === 'object') {
       const record = location as Record<string, unknown>;
-      addVariant(typeof record.city === 'string' ? record.city : undefined);
-      addVariant(typeof record.state === 'string' ? record.state : undefined);
-      addVariant(typeof record.country === 'string' ? record.country : undefined);
+      const city = typeof record.city === 'string' ? record.city : undefined;
+      const state = typeof record.state === 'string' ? record.state : undefined;
+      const country = typeof record.country === 'string' ? record.country : undefined;
 
-      const city = typeof record.city === 'string' ? record.city : '';
-      const state = typeof record.state === 'string' ? record.state : '';
-      const country = typeof record.country === 'string' ? record.country : '';
+      result.city = city;
+      result.state = state;
+      result.country = country;
 
-      addVariant(city && state ? `${city}, ${state}` : undefined);
-      addVariant(state && country ? `${state}, ${country}` : undefined);
-      addVariant(city && country ? `${city}, ${country}` : undefined);
+      addVariant(city);
+      addVariant(state);
+      addVariant(country);
+
+      if (city && state) addVariant(`${city}, ${state}`);
+      if (state && country) addVariant(`${state}, ${country}`);
+      if (city && country) addVariant(`${city}, ${country}`);
     }
 
-    return Array.from(variants);
+    result.combined = Array.from(combined);
+    return result;
   };
 
   const isNearbyLocationMatch = (sourceLocation: unknown, targetLocation: unknown) => {
-    const sourceNames = getExactLocationVariants(sourceLocation);
-    const targetNames = getExactLocationVariants(targetLocation);
+    const source = getExactLocationVariants(sourceLocation);
+    const target = getExactLocationVariants(targetLocation);
 
-    if (!sourceNames.length || !targetNames.length) return false;
+    if (!source.combined.length || !target.combined.length) return false;
 
-    return sourceNames.some((sourceName) => targetNames.includes(sourceName));
+    const cityMatches = Boolean(source.city && target.city && source.city.toLowerCase() === target.city.toLowerCase());
+    const stateMatches = Boolean(source.state && target.state && source.state.toLowerCase() === target.state.toLowerCase());
+    const countryMatches = Boolean(source.country && target.country && source.country.toLowerCase() === target.country.toLowerCase());
+
+    if (cityMatches) return true;
+    if (stateMatches && countryMatches && !cityMatches) return false;
+
+    const directMatch = source.combined.some((value) => target.combined.includes(value));
+    return directMatch && (cityMatches || (!source.city && !target.city) || (!source.state && !target.state));
   };
 
   // Filter listings
