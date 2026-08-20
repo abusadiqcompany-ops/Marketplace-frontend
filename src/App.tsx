@@ -2322,7 +2322,9 @@ function MarketConnectApp() {
 
         const params = new URLSearchParams(location.search);
         const provider = (params.get('provider') || '') as 'paystack' | 'flutterwave';
-        const reference = provider === 'paystack' ? params.get('reference') : params.get('tx_ref');
+        const reference = provider === 'paystack'
+          ? params.get('reference') || params.get('trxref')
+          : params.get('tx_ref');
         const verificationType = params.get('type') || params.get('purpose') || '';
         setDepositReference(reference);
 
