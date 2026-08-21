@@ -1954,6 +1954,10 @@ function MarketConnectApp() {
     }
 
     const sellerListings = listings.filter(listing => listing.sellerId === seller.id);
+    const sellerRating = getSellerRating(seller.id);
+    const sellerSales = orders.filter(order =>
+      order.sellerId === seller.id && ['confirmed', 'completed'].includes(order.status)
+    ).length;
     const sellerLocation = normalizeListingLocation(seller.sellerLocation || seller.location || '');
     const sellerContactEmail = seller.email || '';
 
@@ -1980,20 +1984,6 @@ function MarketConnectApp() {
                     {sellerContactEmail && <div className="mt-1">Email: {sellerContactEmail}</div>}
                   </div>
                 )}
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-xs uppercase tracking-[0.24em] text-slate-400">Listings</div>
-                <div className="mt-2 text-2xl font-semibold text-slate-900">{sellerListings.length}</div>
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-[0.24em] text-slate-400">Rating</div>
-                <div className="mt-2 text-2xl font-semibold text-slate-900">{getSellerRating(seller.id).avg || '—'}</div>
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-[0.24em] text-slate-400">Reviews</div>
-                <div className="mt-2 text-2xl font-semibold text-slate-900">{getSellerRating(seller.id).count}</div>
               </div>
             </div>
             <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -2023,6 +2013,29 @@ function MarketConnectApp() {
               }} className="w-full sm:w-auto px-6 py-3 rounded-3xl bg-emerald-600 text-white text-sm font-semibold">Message seller</button>
               <button onClick={() => navigate(`/listing/${sellerListings[0]?.id}`)} className="w-full sm:w-auto px-6 py-3 rounded-3xl border border-slate-300 text-slate-700 text-sm font-semibold">View first listing</button>
             </div>
+          </div>
+        </div>
+
+        <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Active listings</div>
+            <div className="mt-3 text-4xl font-semibold text-slate-900">{sellerListings.length}</div>
+            <div className="mt-1 text-sm text-slate-500">Currently available</div>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Average rating</div>
+            <div className="mt-3 text-4xl font-semibold text-slate-900">{sellerRating.avg || '—'}<span className="ml-1 text-lg text-slate-400">/5</span></div>
+            <div className="mt-1 text-sm text-slate-500">Buyer satisfaction</div>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Total reviews</div>
+            <div className="mt-3 text-4xl font-semibold text-slate-900">{sellerRating.count}</div>
+            <div className="mt-1 text-sm text-slate-500">Verified buyer feedback</div>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Sales done</div>
+            <div className="mt-3 text-4xl font-semibold text-slate-900">{sellerSales}</div>
+            <div className="mt-1 text-sm text-slate-500">Confirmed orders</div>
           </div>
         </div>
 
