@@ -135,6 +135,26 @@ const normalizeStoredAppNotifications = (notifications: AppNotification[]) =>
 
 const buildInitialAppNotifications = (): AppNotification[] => [];
 
+const saveListingsToStorage = (listings: Listing[]) => {
+  if (typeof window === 'undefined') return;
+
+  const compactListings = listings.map((listing) => ({
+    ...listing,
+    // Uploaded data URLs can be several megabytes and are already persisted by the backend.
+    images: (listing.images || []).filter((image) => !image.startsWith('data:')).slice(0, 3),
+  }));
+
+  try {
+    window.localStorage.setItem('mc_listings', JSON.stringify(compactListings));
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      window.localStorage.removeItem('mc_listings');
+      return;
+    }
+    console.warn('Unable to cache listings locally.', error);
+  }
+};
+
 const INITIAL_LISTINGS: Listing[] = [
   { id: 'l1', sellerId: 'u2', sellerName: 'Emeka Electronics', title: 'Sony WH-1000XM5 Wireless Headphones', description: 'Noise cancelling headphones with 30-hour battery life. Perfect condition and fast delivery across Lagos.', price: 185000, category: 'Electronics', location: 'Lagos', images: ['https://picsum.photos/id/20/600/400', 'https://picsum.photos/id/180/600/400'], createdAt: '2025-01-12T10:00:00Z' },
   { id: 'l2', sellerId: 'u3', sellerName: 'Fatima Fashion', title: 'Authentic Ankara Fabric - 5 Yards', description: 'High-quality African print fabric for traditional wear and custom styling.', price: 25000, category: 'Fashion', location: 'Abuja', images: ['https://picsum.photos/id/1005/600/400'], createdAt: '2025-01-13T09:30:00Z' },
@@ -526,7 +546,7 @@ function MarketConnectApp() {
   // Save to localStorage
   useEffect(() => {
     if (currentUser) localStorage.setItem('mc_currentUser', JSON.stringify(currentUser));
-    localStorage.setItem('mc_listings', JSON.stringify(listings));
+    saveListingsToStorage(listings);
     localStorage.setItem('mc_messages', JSON.stringify(messages));
     localStorage.setItem('mc_orders', JSON.stringify(orders));
     localStorage.setItem('mc_reviews', JSON.stringify(reviews));
