@@ -3835,31 +3835,6 @@ function MarketConnectApp() {
                   </div>
                 </div>
 
-                <div className="rounded-[28px] bg-white border border-slate-200 p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-                  <div className="text-lg font-semibold mb-3">Transaction History</div>
-                  <div className="text-sm text-slate-500 mb-5">Track deposits, withdrawals, and payouts.</div>
-                  <div className="space-y-3 max-h-[26rem] overflow-y-auto pr-2">
-                    {transactions.filter(t => t.userId === currentUserSafe.id).length === 0 ? (
-                      <div className="text-sm text-slate-400 py-14 text-center">No transactions yet.</div>
-                    ) : (
-                      transactions.filter(t => t.userId === currentUserSafe.id).slice(0, 50).map(tx => (
-                        <div key={tx.id} className="flex items-start justify-between gap-3 p-4 border border-slate-200 rounded-[22px] bg-slate-50">
-                          <div className="min-w-0">
-                            <div className="text-sm font-semibold text-slate-900">{tx.type.toUpperCase()}</div>
-                            <div className="text-xs text-slate-500">{new Date(tx.createdAt).toLocaleString()}</div>
-                            {tx.details && <div className="text-xs text-slate-500 truncate mt-2">{tx.details}</div>}
-                          </div>
-                          <div className="flex flex-col items-end gap-2">
-                            <div className={`rounded-full px-3 py-1 text-xs font-semibold ${tx.type === 'payout' || tx.type === 'deposit' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                              {tx.type === 'deposit' ? 'Credit' : tx.type === 'payout' ? 'Payout' : 'Debit'}
-                            </div>
-                            <div className={`font-semibold ${tx.type === 'payout' || tx.type === 'deposit' ? 'text-emerald-600' : 'text-rose-600'}`}>₦{tx.amount}</div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
           )}
