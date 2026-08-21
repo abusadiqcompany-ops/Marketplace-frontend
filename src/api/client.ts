@@ -313,6 +313,11 @@ export async function getAdminAccountDeletionRequests() {
   return response.data;
 }
 
+export async function getAdminRevenue() {
+  const response = await api.get('/admin/revenue', { headers: authHeaders() });
+  return response.data;
+}
+
 export async function createAccountDeletionRequest(reason: string) {
   const response = await api.post('/account-deletion-requests', { reason }, { headers: authHeaders() });
   return response.data;
@@ -346,12 +351,17 @@ export async function initializeMembershipVerificationPayment(userId: string, am
 }
 
 export async function verifyMembershipVerificationPayment(userId: string, provider: 'paystack' | 'flutterwave', reference: string) {
-  const response = await api.post(`/admin/users/${userId}/verify-membership/verify`, { provider, reference }, { headers: authHeaders() });
+  const response = await api.post(`/users/${userId}/verify-membership/verify`, { provider, reference }, { headers: authHeaders() });
   return response.data;
 }
 
 export async function approveUserVerification(userId: string, badgeType: 'active_member' | 'verified_seller', verificationFee?: number) {
   const response = await api.post(`/admin/users/${userId}/approve-verification`, { badgeType, verificationFee }, { headers: authHeaders() });
+  return response.data;
+}
+
+export async function requestUserVerification(userId: string, badgeType: 'active_member' | 'verified_seller', verificationFee: number) {
+  const response = await api.post(`/admin/users/${userId}/request-verification`, { badgeType, verificationFee }, { headers: authHeaders() });
   return response.data;
 }
 

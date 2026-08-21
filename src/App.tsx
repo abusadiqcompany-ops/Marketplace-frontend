@@ -34,6 +34,7 @@ import {
   getAdminOrders,
   getAdminReports,
   getAdminAccountDeletionRequests,
+  getAdminRevenue,
   createAccountDeletionRequest,
   reviewAccountDeletionRequest,
   createReport,
@@ -41,6 +42,7 @@ import {
   initializeMembershipVerificationPayment,
   verifyMembershipVerificationPayment,
   approveUserVerification,
+  requestUserVerification,
   deleteAdminUser,
   deleteAdminListing,
   resolveAdminDispute,
@@ -354,6 +356,8 @@ function MarketConnectApp() {
   const [verificationAmount] = useState('5000');
   const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
   const [adminUserSearch, setAdminUserSearch] = useState('');
+  const [selectedAdminUserIds, setSelectedAdminUserIds] = useState<string[]>([]);
+  const [adminRevenue, setAdminRevenue] = useState({ deposits: 0, withdrawals: 0 });
   const [assistantTargetUserId, setAssistantTargetUserId] = useState<string>('');
   const [assistantTargetReportId, setAssistantTargetReportId] = useState<string>('');
   const [assistantPrompt, setAssistantPrompt] = useState('Help me evaluate the selected user or complaint.');
@@ -619,12 +623,13 @@ function MarketConnectApp() {
       if (!authInitialized || !currentUser || currentUser.role !== 'admin') return;
 
       try {
-        const [remoteUsers, remoteListings, remoteOrders, remoteReports, remoteDeletionRequests] = await Promise.all([
+        const [remoteUsers, remoteListings, remoteOrders, remoteReports, remoteDeletionRequests, remoteRevenue] = await Promise.all([
           getAdminUsers(),
           getAdminListings(),
           getAdminOrders(),
           getAdminReports(),
           getAdminAccountDeletionRequests(),
+          getAdminRevenue(),
         ]);
 
         if (Array.isArray(remoteUsers)) {
@@ -642,6 +647,7 @@ function MarketConnectApp() {
         if (Array.isArray(remoteDeletionRequests)) {
           setDeletionRequests(remoteDeletionRequests as AccountDeletionRequest[]);
         }
+        if (remoteRevenue) setAdminRevenue(remoteRevenue);
       } catch (error) {
         console.warn('Unable to load admin dashboard data.', error);
       }
@@ -2336,20 +2342,12 @@ function MarketConnectApp() {
 
         try {
           if (verificationType === 'membership_verification') {
-            if (currentUser) {
-              const badgeType = currentUser.verificationBadgeType;
-              const level: 'basic' | 'full' = badgeType === 'verified_seller' ? 'full' : 'basic';
-              const updatedUser: UserType = {
-                ...currentUser,
-                verified: true,
-                verificationLevel: level,
-                verificationRequestStatus: 'approved',
-              };
-              setCurrentUser(updatedUser);
-              setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
-            }
+            const payment = await verifyMembershipVerificationPayment(currentUser.id, provider, reference);
+            const updatedUser = payment.user as UserType;
+            setCurrentUser(updatedUser);
+            setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
             setStatus('success');
-            setMessage('Verification payment completed. Your account has been updated.');
+            setMessage('Verification payment completed. Your account was approved automatically.');
             return;
           }
 
@@ -2824,9 +2822,12 @@ function MarketConnectApp() {
       setDeletionRequests(prev => prev.map(item => item.id === requestId ? { ...item, ...updatedRequest } : item));
 
       if (action === 'approve') {
+        await deleteAdminUser(request.userId);
         setUsers(prev => prev.filter(user => user.id !== request.userId));
         setListings(prev => prev.filter(listing => listing.sellerId !== request.userId));
         setOrders(prev => prev.filter(order => order.buyerId !== request.userId && order.sellerId !== request.userId));
+        setTransactions(prev => prev.filter(transaction => transaction.userId !== request.userId && transaction.counterpartyId !== request.userId));
+        setDeletionRequests(prev => prev.filter(item => item.userId !== request.userId));
         addPortalNotification({
           title: 'Account deletion approved',
           message: 'Your account deletion request was approved. Your account has been removed from the platform.',
@@ -2969,6 +2970,33 @@ function MarketConnectApp() {
       addNotification(error?.response?.data?.error || error?.message || 'Unable to approve verification.', 'error');
     } finally {
       setVerifyingUserId(null);
+    }
+  };
+
+  const adminRequestVerification = async (user: UserType, badgeType = adminVerificationBadgeType) => {
+    const fee = Number(adminVerificationFee) || 5000;
+    const response = await requestUserVerification(user.id, badgeType, fee);
+    const requestedUser = { ...user, ...response.user } as UserType;
+    setUsers(prev => prev.map(item => item.id === user.id ? requestedUser : item));
+    addNotification(`Verification request sent for ${user.name}.`, 'success');
+  };
+
+  const runBulkAdminAction = async (action: 'approve' | 'request' | 'remove') => {
+    const selectedUsers = users.filter(user => selectedAdminUserIds.includes(user.id));
+    if (!selectedUsers.length) return;
+    if (!window.confirm(`${action === 'remove' ? 'Remove' : action === 'approve' ? 'Approve' : 'Send a verification request to'} ${selectedUsers.length} selected user(s)?`)) return;
+
+    try {
+      for (const user of selectedUsers) {
+        if (action === 'remove') await deleteAdminUser(user.id);
+        else if (action === 'request') await adminRequestVerification(user);
+        else if (!user.verified) await adminVerifyMembership(user);
+      }
+      if (action === 'remove') setUsers(prev => prev.filter(user => !selectedAdminUserIds.includes(user.id)));
+      setSelectedAdminUserIds([]);
+      addNotification('Bulk user action completed.', 'success');
+    } catch (error: any) {
+      addNotification(error?.response?.data?.error || error?.message || 'Bulk action failed.', 'error');
     }
   };
 
@@ -3933,6 +3961,10 @@ function MarketConnectApp() {
               <div className="bg-white border p-6 rounded-3xl"><div className="text-emerald-600 text-sm">LISTINGS</div><div className="font-semibold text-6xl">{listings.length}</div></div>
               <div className="bg-white border p-6 rounded-3xl"><div className="text-emerald-600 text-sm">ORDERS</div><div className="font-semibold text-6xl">{orders.length}</div></div>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+              <div className="bg-white border p-6 rounded-3xl"><div className="text-emerald-600 text-sm">TOTAL DEPOSITS</div><div className="font-semibold text-4xl mt-2">₦{adminRevenue.deposits.toLocaleString()}</div></div>
+              <div className="bg-white border p-6 rounded-3xl"><div className="text-rose-600 text-sm">TOTAL WITHDRAWALS</div><div className="font-semibold text-4xl mt-2">₦{adminRevenue.withdrawals.toLocaleString()}</div></div>
+            </div>
 
             {/* Users Table */}
             <div className="mb-9">
@@ -3982,6 +4014,15 @@ function MarketConnectApp() {
                   />
                 </div>
               </div>
+              {selectedAdminUserIds.length > 0 && (
+                <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
+                  <span className="mr-2 text-sm font-medium">{selectedAdminUserIds.length} selected</span>
+                  <button onClick={() => runBulkAdminAction('approve')} className="rounded-full bg-emerald-600 px-3 py-2 text-xs font-semibold text-white">Approve</button>
+                  <button onClick={() => runBulkAdminAction('request')} className="rounded-full bg-slate-800 px-3 py-2 text-xs font-semibold text-white">Send request</button>
+                  <button onClick={() => runBulkAdminAction('remove')} className="rounded-full bg-rose-600 px-3 py-2 text-xs font-semibold text-white">Remove</button>
+                  <button onClick={() => setSelectedAdminUserIds([])} className="rounded-full bg-white px-3 py-2 text-xs text-slate-700">Clear</button>
+                </div>
+              )}
               {adminVerificationTargetId && (
                 <div className="mb-5 rounded-3xl border border-slate-200 bg-slate-50 p-5">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -3998,37 +4039,9 @@ function MarketConnectApp() {
                       <button onClick={() => {
                         const selectedUser = users.find(u => u.id === adminVerificationTargetId);
                         if (!selectedUser) return;
-                        const fee = Number(adminVerificationFee) || 5000;
-                        setUsers(prev => {
-                          const next = prev.map(u => u.id === selectedUser.id ? {
-                            ...u,
-                            verificationRequestStatus: 'pending',
-                            verificationBadgeType: adminVerificationBadgeType,
-                            verificationFee: fee,
-                          } : u);
-                          if (typeof window !== 'undefined') {
-                            localStorage.setItem('mc_users', JSON.stringify(next));
-                          }
-                          return next;
-                        });
-                        addPortalNotification({
-                          title: 'Verification request sent',
-                          message: `Admin has started your ${adminVerificationBadgeType === 'verified_seller' ? 'Verified Seller' : 'Active Member'} verification request. Complete the payment to proceed.`,
-                          type: 'verification',
-                          targetUserId: selectedUser.id,
-                          targetRole: 'all',
-                          relatedUserId: selectedUser.id,
-                        });
-                        if (currentUser?.id === selectedUser.id) {
-                          setCurrentUser(prev => prev ? {
-                            ...prev,
-                            verificationRequestStatus: 'pending',
-                            verificationBadgeType: adminVerificationBadgeType,
-                            verificationFee: fee,
-                          } : prev);
-                        }
-                        addNotification(`Verification request sent for ${selectedUser.name}.`, 'success');
-                        setAdminVerificationTargetId('');
+                        void adminRequestVerification(selectedUser, adminVerificationBadgeType)
+                          .then(() => setAdminVerificationTargetId(''))
+                          .catch((error: any) => addNotification(error?.response?.data?.error || 'Unable to send verification request.', 'error'));
                       }} className="rounded-3xl bg-emerald-600 text-white px-4 py-3 text-sm">Apply</button>
                       <button onClick={() => setAdminVerificationTargetId('')} className="rounded-3xl bg-slate-200 text-slate-700 px-4 py-3 text-sm">Cancel</button>
                     </div>
@@ -4038,7 +4051,7 @@ function MarketConnectApp() {
 
               <div className="bg-white border rounded-3xl overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead><tr className="border-b text-left text-slate-500"><th className="p-5">User</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+                  <thead><tr className="border-b text-left text-slate-500"><th className="p-5"><input type="checkbox" aria-label="Select all users" checked={users.length > 0 && selectedAdminUserIds.length === users.length} onChange={e => setSelectedAdminUserIds(e.target.checked ? users.map(user => user.id) : [])} /></th><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
                   <tbody>
                     {users.filter(user => {
                       const query = adminUserSearch.trim().toLowerCase();
@@ -4046,7 +4059,8 @@ function MarketConnectApp() {
                       return user.name.toLowerCase().includes(query) || user.email.toLowerCase().includes(query) || user.role.toLowerCase().includes(query);
                     }).map(user => (
                       <tr key={user.id} className="border-b last:border-none">
-                        <td className="p-5 flex items-center gap-3"><img src={user.avatar} className="w-8 h-8 rounded-xl" />{user.name}</td>
+                        <td className="p-5"><input type="checkbox" aria-label={`Select ${user.name}`} checked={selectedAdminUserIds.includes(user.id)} onChange={e => setSelectedAdminUserIds(prev => e.target.checked ? [...prev, user.id] : prev.filter(id => id !== user.id))} /></td>
+                        <td className="flex items-center gap-3"><img src={user.avatar} className="w-8 h-8 rounded-xl" />{user.name}</td>
                         <td className="text-slate-500">{user.email}</td>
                         <td><span className="px-3 py-px text-xs rounded-full bg-slate-100 font-medium capitalize">{user.role}</span></td>
                         <td>
