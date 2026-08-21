@@ -172,6 +172,7 @@ function MarketConnectApp() {
   const [chatSyncing, setChatSyncing] = useState(false);
   const chatEventSourceRef = useRef<EventSource | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
+  const ordersLoadVersion = useRef(0);
   const [reports, setReports] = useState<Report[]>([]);
   const [deletionRequests, setDeletionRequests] = useState<AccountDeletionRequest[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -660,7 +661,10 @@ function MarketConnectApp() {
   }, [authInitialized, currentUser?.id, currentUser?.role]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const loadOrders = async (user: UserType | null) => {
+      const loadVersion = ++ordersLoadVersion.current;
       if (!authInitialized || !user) {
         setOrders([]);
         setTransactions([]);
@@ -676,9 +680,9 @@ function MarketConnectApp() {
         // only request orders for buyer/seller roles
         if (user.role === 'buyer' || user.role === 'seller') {
           const remoteOrders = await getUserOrders(user.id, user.role);
-          setOrders(remoteOrders);
+          if (!cancelled && loadVersion === ordersLoadVersion.current) setOrders(remoteOrders);
         } else {
-          setOrders([]);
+          if (!cancelled && loadVersion === ordersLoadVersion.current) setOrders([]);
         }
       } catch (error) {
         console.warn('Unable to load orders from backend.', error);
@@ -686,13 +690,29 @@ function MarketConnectApp() {
 
       try {
         const walletTransactions = await getTransactionHistory(user.id);
-        setTransactions(walletTransactions);
+        if (!cancelled && loadVersion === ordersLoadVersion.current) setTransactions(walletTransactions);
       } catch (error) {
         console.warn('Unable to load transaction history from backend.', error);
       }
     };
 
     loadOrders(currentUser);
+
+    if (currentUser && currentUser.role !== 'admin') {
+      const refreshTimer = window.setInterval(() => loadOrders(currentUser), 4000);
+      const refreshOnFocus = () => loadOrders(currentUser);
+      window.addEventListener('focus', refreshOnFocus);
+
+      return () => {
+        cancelled = true;
+        window.clearInterval(refreshTimer);
+        window.removeEventListener('focus', refreshOnFocus);
+      };
+    }
+
+    return () => {
+      cancelled = true;
+    };
   }, [authInitialized, currentUser]);
 
   useEffect(() => {
