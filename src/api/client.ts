@@ -504,6 +504,11 @@ export async function payOrderWithWallet(orderId: string, userId: string) {
   return response.data;
 }
 
+export async function selectOrderFulfillment(orderId: string, userId: string, method: 'meetup' | 'shipping') {
+  const response = await api.post(`/orders/${orderId}/fulfillment`, { userId, method }, { headers: authHeaders() });
+  return response.data;
+}
+
 // ============== ORDER APIs ==============
 
 export async function createOrder(
@@ -586,6 +591,11 @@ export async function shipOrder(orderId: string, userId: string, trackingNumber?
     },
     { headers: authHeaders() }
   );
+  return response.data;
+}
+
+export async function markOrderDelivered(orderId: string, userId: string) {
+  const response = await api.post(`/orders/${orderId}/mark-delivered`, { userId }, { headers: authHeaders() });
   return response.data;
 }
 

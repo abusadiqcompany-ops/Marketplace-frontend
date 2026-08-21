@@ -20,10 +20,12 @@ import {
   getUserOrders,
   acceptOrder,
   shipOrder,
+  markOrderDelivered,
   confirmDelivery,
   cancelOrder,
   raiseDispute,
   payOrderWithWallet,
+  selectOrderFulfillment,
   verifyWalletDeposit,
   getWalletBalance,
   postWalletDeposit,
@@ -243,6 +245,7 @@ function MarketConnectApp() {
   };
   const [showOrderModal, setShowOrderModal] = useState<Listing | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState<Order | null>(null);
+  const [fulfillmentOrder, setFulfillmentOrder] = useState<Order | null>(null);
   const [showReviewModal, setShowReviewModal] = useState<Order | null>(null);
 
   const navigateTo = (tab: string) => {
@@ -2032,6 +2035,8 @@ function MarketConnectApp() {
         updatedOrder = await acceptOrder(orderId, currentUser.id);
       } else if (status === 'shipped') {
         updatedOrder = await shipOrder(orderId, currentUser.id, order.deliveryDetails?.trackingNumber);
+      } else if (status === 'delivered') {
+        updatedOrder = await markOrderDelivered(orderId, currentUser.id);
       } else if (status === 'confirmed') {
         const result = await confirmDelivery(orderId, currentUser.id);
         updatedOrder = result.order;
@@ -2490,7 +2495,7 @@ function MarketConnectApp() {
     if (!order || !currentUser) return;
 
     try {
-      await payOrderWithWallet(order.id, currentUser.id);
+      const paymentResult = await payOrderWithWallet(order.id, currentUser.id);
       const refreshedUser = await getCurrentUser();
       setCurrentUser(refreshedUser);
       setUsers(prev => prev.map(u => (u.id === refreshedUser.id ? refreshedUser : u)));
@@ -2503,6 +2508,7 @@ function MarketConnectApp() {
       setOrders(refreshedOrders);
 
       setShowPaymentModal(null);
+      setFulfillmentOrder(paymentResult.order || order);
       addNotification('Payment completed — funds secured in escrow. Seller notified to ship. Confirm delivery to release funds.', 'success');
 
       // Notify seller and buyer about next steps: seller to ship, buyer to confirm delivery
@@ -2530,6 +2536,53 @@ function MarketConnectApp() {
     } catch (error: any) {
       console.error(error);
       addNotification(error?.response?.data?.error || error?.message || 'Unable to complete payment.', 'error');
+    }
+  };
+
+  const selectFulfillment = async (order: Order, method: 'meetup' | 'shipping') => {
+    if (!currentUser) return;
+
+    try {
+      const updatedOrder = await selectOrderFulfillment(order.id, currentUser.id, method);
+      setOrders(prev => prev.map(item => item.id === updatedOrder.id ? updatedOrder : item));
+      setFulfillmentOrder(null);
+
+      if (method === 'meetup') {
+        const chatId = [currentUser.id, updatedOrder.sellerId].sort().join('-') + `-${updatedOrder.listingId}`;
+        const content = `Hi ${updatedOrder.sellerName}, I selected pickup for "${updatedOrder.listingTitle}". Please send me the pickup time and location.`;
+        const message: Message = {
+          id: `m${Date.now()}`,
+          chatId,
+          senderId: currentUser.id,
+          senderName: currentUser.name,
+          content,
+          timestamp: new Date().toISOString(),
+        };
+        setMessages(prev => [...prev, message]);
+
+        const token = getAccessToken();
+        if (token) {
+          await fetch(`${import.meta.env.VITE_API_URL ? normalizeApiUrl(import.meta.env.VITE_API_URL) : ''}/api/chat/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              senderId: currentUser.id,
+              senderName: currentUser.name,
+              content,
+              recipientId: updatedOrder.sellerId,
+              listingId: updatedOrder.listingId,
+            }),
+          });
+        }
+        addNotification('Pickup selected. The seller has been messaged.', 'success');
+      } else {
+        const deliveryUrl = import.meta.env.VITE_DELIVERY_URL || 'https://example.com/delivery';
+        const params = new URLSearchParams({ orderId: updatedOrder.id, listing: updatedOrder.listingTitle, amount: String(updatedOrder.price) });
+        window.open(`${deliveryUrl}${deliveryUrl.includes('?') ? '&' : '?'}${params.toString()}`, '_blank', 'noopener,noreferrer');
+        addNotification('Delivery selected. Continue on the delivery provider website.', 'success');
+      }
+    } catch (error: any) {
+      addNotification(error?.response?.data?.error || error?.message || 'Unable to save fulfillment method.', 'error');
     }
   };
 
@@ -3503,9 +3556,23 @@ function MarketConnectApp() {
                               <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="whitespace-nowrap px-4 py-1.5 text-xs border text-red-600 rounded-full flex items-center gap-1"><X className="w-3 h-3"/> Reject</button>
                             </div>
                           )}
+
+                          {isSeller && (order.status === 'accepted' || order.status === 'shipped') && (
+                            <button onClick={() => updateOrderStatus(order.id, 'delivered')} className="px-5 py-2 bg-blue-600 text-white rounded-3xl text-xs">
+                              {order.deliveryDetails?.method === 'meetup' ? 'Mark pickup complete' : 'Mark delivered'}
+                            </button>
+                          )}
                           
                           {!isSeller && order.status === 'accepted' && (
                             <button onClick={() => setShowPaymentModal(order)} className="px-6 py-2 bg-slate-900 hover:bg-black text-white rounded-3xl text-xs">Complete Payment</button>
+                          )}
+
+                          {!isSeller && order.paymentStatus === 'completed' && !order.deliveryDetails?.method && (
+                            <button onClick={() => setFulfillmentOrder(order)} className="px-5 py-2 bg-emerald-600 text-white rounded-3xl text-xs">Choose pickup or delivery</button>
+                          )}
+
+                          {!isSeller && order.status === 'delivered' && order.paymentStatus === 'completed' && (
+                            <button onClick={() => openConfirmModal('Confirm order', 'Confirm that you received the order in good condition and release the held payment to the seller?', () => updateOrderStatus(order.id, 'confirmed'))} className="px-5 py-2 bg-emerald-600 text-white rounded-3xl text-xs">Confirm order &amp; release payment</button>
                           )}
                           
                           {(['delivered', 'shipped'].includes(order.status) || order.status === 'disputed') && !isSeller && (
@@ -4293,6 +4360,26 @@ function MarketConnectApp() {
               {(currentUserSafe.walletBalance || 0) < showPaymentModal.price && (
                 <div className="text-xs text-rose-500 mt-3">Not enough wallet balance to complete this purchase.</div>
               )}
+          </div>
+        </div>
+      )}
+
+      {fulfillmentOrder && (
+        <div className="fixed inset-0 bg-black/60 z-[82] flex items-center justify-center p-4">
+          <div className="bg-white p-8 rounded-3xl w-full max-w-md">
+            <div className="font-semibold text-2xl tracking-tight">Choose fulfillment</div>
+            <p className="mt-2 text-sm text-slate-600">Your payment is held securely. Select how you want to receive this order.</p>
+            <div className="grid gap-3 mt-7">
+              <button onClick={() => void selectFulfillment(fulfillmentOrder, 'meetup')} className="flex items-center gap-3 rounded-2xl border border-slate-200 p-4 text-left hover:border-emerald-500">
+                <MapPin className="h-5 w-5 text-emerald-600" />
+                <span><strong className="block">Pickup from seller</strong><small className="text-slate-500">Message the seller to arrange a time and location.</small></span>
+              </button>
+              <button onClick={() => void selectFulfillment(fulfillmentOrder, 'shipping')} className="flex items-center gap-3 rounded-2xl border border-slate-200 p-4 text-left hover:border-emerald-500">
+                <ShoppingBag className="h-5 w-5 text-emerald-600" />
+                <span><strong className="block">Delivery</strong><small className="text-slate-500">Continue with the external delivery provider.</small></span>
+              </button>
+            </div>
+            <button onClick={() => setFulfillmentOrder(null)} className="mt-6 w-full rounded-3xl border border-slate-300 py-3 text-sm">Decide later</button>
           </div>
         </div>
       )}
