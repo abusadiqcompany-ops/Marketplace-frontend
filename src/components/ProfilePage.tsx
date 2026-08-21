@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getProfile, updateProfile, getProfileStats, uploadProfileAvatar, createAccountDeletionRequest } from '../api/client';
+import { getProfile, updateProfile, getProfileStats, uploadProfileAvatar, createAccountDeletionRequest, changePassword } from '../api/client';
 import { User } from '../types';
 import { Plus } from 'lucide-react';
 
@@ -69,6 +69,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
   const profileLoadRef = useRef(0);
   const dirtyRef = useRef(false);
   const [deleteRequestLoading, setDeleteRequestLoading] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' });
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   useEffect(() => {
     const fallbackProfile = buildFallbackProfile(currentUser);
@@ -380,7 +383,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
               </div>
 
               <div className="flex gap-3 mt-3">
-                <button type="button" className="flex-1 p-3 rounded-lg border border-slate-300">Change Password</button>
+                <button type="button" onClick={() => setShowPasswordModal(true)} className="flex-1 p-3 rounded-lg border border-slate-300">Change Password</button>
                 <button type="button" onClick={() => setShowDeleteModal(true)} className="flex-1 p-3 rounded-lg border border-rose-300 text-rose-600">Delete Account</button>
               </div>
             </div>
@@ -473,6 +476,57 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
                   className="flex-1 rounded-3xl bg-rose-600 px-4 py-3 text-white disabled:opacity-60"
                 >
                   {deleteRequestLoading ? 'Sending…' : 'Send request'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-5">
+              <div className="text-lg font-semibold">Change Password</div>
+              <button type="button" onClick={() => setShowPasswordModal(false)} className="text-slate-500">✕</button>
+            </div>
+            <div className="space-y-4">
+              <input type="password" value={passwordForm.current} onChange={e => setPasswordForm(prev => ({ ...prev, current: e.target.value }))} placeholder="Current password" className="w-full rounded-2xl border border-slate-200 p-3" />
+              <input type="password" value={passwordForm.next} onChange={e => setPasswordForm(prev => ({ ...prev, next: e.target.value }))} placeholder="New password" className="w-full rounded-2xl border border-slate-200 p-3" />
+              <input type="password" value={passwordForm.confirm} onChange={e => setPasswordForm(prev => ({ ...prev, confirm: e.target.value }))} placeholder="Confirm new password" className="w-full rounded-2xl border border-slate-200 p-3" />
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowPasswordModal(false)} className="flex-1 rounded-3xl border border-slate-300 px-4 py-3">Cancel</button>
+                <button
+                  type="button"
+                  disabled={passwordLoading}
+                  onClick={async () => {
+                    if (!passwordForm.current || !passwordForm.next || !passwordForm.confirm) {
+                      setSavedMessage('Please complete all password fields.');
+                      return;
+                    }
+                    if (passwordForm.next.length < 6) {
+                      setSavedMessage('New password must be at least 6 characters.');
+                      return;
+                    }
+                    if (passwordForm.next !== passwordForm.confirm) {
+                      setSavedMessage('New passwords do not match.');
+                      return;
+                    }
+                    setPasswordLoading(true);
+                    try {
+                      await changePassword(passwordForm.current, passwordForm.next);
+                      setPasswordForm({ current: '', next: '', confirm: '' });
+                      setShowPasswordModal(false);
+                      setSavedMessage('Password changed successfully.');
+                    } catch (error: any) {
+                      setSavedMessage(error?.response?.data?.error || 'Unable to change password.');
+                    } finally {
+                      setPasswordLoading(false);
+                    }
+                  }}
+                  className="flex-1 rounded-3xl bg-slate-900 px-4 py-3 text-white disabled:opacity-60"
+                >
+                  {passwordLoading ? 'Updating…' : 'Update password'}
                 </button>
               </div>
             </div>

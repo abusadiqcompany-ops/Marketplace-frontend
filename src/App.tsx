@@ -37,6 +37,7 @@ import {
   getAdminReports,
   getAdminAccountDeletionRequests,
   getAdminRevenue,
+  getSellerStats,
   createAccountDeletionRequest,
   reviewAccountDeletionRequest,
   createReport,
@@ -1942,6 +1943,14 @@ function MarketConnectApp() {
   const SellerProfileRoute = () => {
     const { id } = useParams();
     const seller = users.find(user => user.id === id && user.role === 'seller');
+    const [sellerStats, setSellerStats] = useState({ activeListings: 0, averageRating: 0, totalReviews: 0, salesDone: 0 });
+
+    useEffect(() => {
+      if (!seller) return;
+      getSellerStats(seller.id)
+        .then(setSellerStats)
+        .catch(() => setSellerStats({ activeListings: 0, averageRating: 0, totalReviews: 0, salesDone: 0 }));
+    }, [seller?.id]);
 
     if (!seller) {
       return (
@@ -1954,10 +1963,6 @@ function MarketConnectApp() {
     }
 
     const sellerListings = listings.filter(listing => listing.sellerId === seller.id);
-    const sellerRating = getSellerRating(seller.id);
-    const sellerSales = orders.filter(order =>
-      order.sellerId === seller.id && ['confirmed', 'completed'].includes(order.status)
-    ).length;
     const sellerLocation = normalizeListingLocation(seller.sellerLocation || seller.location || '');
     const sellerContactEmail = seller.email || '';
 
@@ -2019,22 +2024,22 @@ function MarketConnectApp() {
         <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Active listings</div>
-            <div className="mt-3 text-4xl font-semibold text-slate-900">{sellerListings.length}</div>
+            <div className="mt-3 text-4xl font-semibold text-slate-900">{sellerStats.activeListings}</div>
             <div className="mt-1 text-sm text-slate-500">Currently available</div>
           </div>
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Average rating</div>
-            <div className="mt-3 text-4xl font-semibold text-slate-900">{sellerRating.avg || '—'}<span className="ml-1 text-lg text-slate-400">/5</span></div>
+            <div className="mt-3 text-4xl font-semibold text-slate-900">{sellerStats.averageRating ? sellerStats.averageRating.toFixed(1) : '—'}<span className="ml-1 text-lg text-slate-400">/5</span></div>
             <div className="mt-1 text-sm text-slate-500">Buyer satisfaction</div>
           </div>
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Total reviews</div>
-            <div className="mt-3 text-4xl font-semibold text-slate-900">{sellerRating.count}</div>
+            <div className="mt-3 text-4xl font-semibold text-slate-900">{sellerStats.totalReviews}</div>
             <div className="mt-1 text-sm text-slate-500">Verified buyer feedback</div>
           </div>
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Sales done</div>
-            <div className="mt-3 text-4xl font-semibold text-slate-900">{sellerSales}</div>
+            <div className="mt-3 text-4xl font-semibold text-slate-900">{sellerStats.salesDone}</div>
             <div className="mt-1 text-sm text-slate-500">Confirmed orders</div>
           </div>
         </div>

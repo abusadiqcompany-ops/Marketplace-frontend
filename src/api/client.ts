@@ -673,6 +673,11 @@ export async function getProfileStats() {
   return response.data;
 }
 
+export async function getSellerStats(sellerId: string) {
+  const response = await api.get(`/sellers/${sellerId}/stats`);
+  return response.data;
+}
+
 export async function uploadProfileAvatar(file: File) {
   // convert file to base64 data URL and send as JSON for simple backend handling
   const dataUrl = await new Promise<string>((resolve, reject) => {
