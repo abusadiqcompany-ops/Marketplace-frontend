@@ -3499,7 +3499,12 @@ function MarketConnectApp() {
             } />
                     <Route path="/profile" element={
               <React.Suspense fallback={<div className="pt-24 px-6">Loading profile...</div>}>
-                <ProfilePage currentUser={currentUser} profileRefreshToken={profileRefreshToken} onReport={() => {
+                <ProfilePage currentUser={currentUser} profileRefreshToken={profileRefreshToken} onProfileUpdated={(updatedUser) => {
+                  setCurrentUser(prev => prev ? { ...prev, ...updatedUser } : updatedUser);
+                  setProfileForm(prev => ({ ...prev, ...updatedUser }));
+                  setProfilePhoto(updatedUser.avatar || '');
+                  setUsers(prev => prev.map(user => user.id === updatedUser.id ? { ...user, ...updatedUser } : user));
+                }} onReport={() => {
                   if (!currentUser) {
                     navigate(LOGIN_PATH);
                     return;

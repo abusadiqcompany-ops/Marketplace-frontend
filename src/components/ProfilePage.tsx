@@ -7,6 +7,7 @@ import { Plus } from 'lucide-react';
 interface ProfilePageProps {
   currentUser?: User | null;
   profileRefreshToken?: number;
+  onProfileUpdated?: (user: User) => void;
   onReport?: () => void;
 }
 
@@ -14,7 +15,7 @@ const NIGERIAN_STATES = [
   'Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','Gombe','Imo','Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara','FCT'
 ];
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRefreshToken = 0, onReport }) => {
+export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRefreshToken = 0, onProfileUpdated, onReport }) => {
   const navigate = useNavigate();
 
   const handleViewListings = () => {
@@ -202,6 +203,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
 
       const updated = await updateProfile(payload);
       setProfile((prev: any) => ({ ...prev, ...updated }));
+      onProfileUpdated?.(updated as User);
       setSavedMessage('✅ Changes Saved!');
       dirtyRef.current = false;
       setDirty(false);
@@ -247,6 +249,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
     try {
       const res = await uploadProfileAvatar(file);
       setProfile((prev: any) => ({ ...prev, avatar: res.avatar }));
+      onProfileUpdated?.({ ...profile, avatar: res.avatar } as User);
       setSavedMessage('✅ Avatar updated');
       setDirty(false);
       setPendingAvatarFile(null);
