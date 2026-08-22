@@ -301,8 +301,19 @@ function MarketConnectApp() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
   const [verificationRefreshToken, setVerificationRefreshToken] = useState(0);
-  const [showMyListings, setShowMyListings] = useState(false);
+  const [showMyListings, setShowMyListings] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const storageKey = `mc_show_my_listings_${currentUser?.id || 'guest'}`;
+    const savedValue = localStorage.getItem(storageKey);
+    return savedValue === null ? true : savedValue === 'true';
+  });
   const prevProfileUserId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const storageKey = `mc_show_my_listings_${currentUser?.id || 'guest'}`;
+    localStorage.setItem(storageKey, String(showMyListings));
+  }, [currentUser?.id, showMyListings]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
