@@ -711,10 +711,15 @@ function MarketConnectApp() {
       }
 
       try {
-        // only request orders for buyer/seller roles
         if (user.role === 'buyer' || user.role === 'seller') {
-          const remoteOrders = await getUserOrders(user.id, user.role);
-          if (!cancelled && loadVersion === ordersLoadVersion.current) setOrders(remoteOrders);
+          const [buyerOrders, sellerOrders] = await Promise.all([
+            getUserOrders(user.id, 'buyer'),
+            getUserOrders(user.id, 'seller'),
+          ]);
+          const mergedOrders = [...buyerOrders, ...sellerOrders].filter((order, index, all) => (
+            all.findIndex(candidate => candidate.id === order.id) === index
+          ));
+          if (!cancelled && loadVersion === ordersLoadVersion.current) setOrders(mergedOrders);
         } else {
           if (!cancelled && loadVersion === ordersLoadVersion.current) setOrders([]);
         }
@@ -748,6 +753,25 @@ function MarketConnectApp() {
       cancelled = true;
     };
   }, [authInitialized, currentUser]);
+
+  useEffect(() => {
+    if (!authInitialized || !currentUser || activeTab !== 'activity') return;
+
+    let cancelled = false;
+    getCurrentUser()
+      .then((freshUser) => {
+        if (cancelled || !freshUser) return;
+        setCurrentUser(freshUser);
+        localStorage.setItem('mc_currentUser', JSON.stringify(freshUser));
+      })
+      .catch((error) => {
+        console.warn('Unable to refresh activity user status.', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, authInitialized, currentUser?.id]);
 
   useEffect(() => {
     // Register global auth-failure handler so any 401 from API triggers log out and auth modal
@@ -3604,6 +3628,16 @@ function MarketConnectApp() {
         {activeTab === 'activity' && (
           <div className="pt-8 max-w-5xl">
             <div className="text-5xl font-semibold tracking-tight mb-8">My Activity</div>
+
+            {currentUserSafe.verificationRequestStatus === 'pending' && !currentUserSafe.verified && (
+              <div className="mb-8 rounded-3xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+                <div className="font-semibold">Verification request from admin</div>
+                <p className="mt-1 text-sm">Admin has requested your verification. Complete the payment from your Profile to activate your verification badge.</p>
+                <button type="button" onClick={() => navigate('/profile')} className="mt-4 rounded-2xl bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800">
+                  Open Profile
+                </button>
+              </div>
+            )}
 
             {/* Favorites */}
             <div className="mb-12">
