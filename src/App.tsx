@@ -272,7 +272,14 @@ function MarketConnectApp() {
   const [showPaymentModal, setShowPaymentModal] = useState<Order | null>(null);
   const [fulfillmentOrder, setFulfillmentOrder] = useState<Order | null>(null);
   const [showReviewModal, setShowReviewModal] = useState<Order | null>(null);
-  const [sellerStatsCache, setSellerStatsCache] = useState<Record<string, { activeListings: number; averageRating: number; totalReviews: number; salesDone: number }>>({});
+  const [sellerStatsCache, setSellerStatsCache] = useState<Record<string, { activeListings: number; averageRating: number; totalReviews: number; salesDone: number }>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(localStorage.getItem('mc_seller_stats') || '{}');
+    } catch {
+      return {};
+    }
+  });
 
   const navigateTo = (tab: string) => {
     const path = tab === 'discover' ? '/' : `/${tab}`;
@@ -2085,8 +2092,18 @@ function MarketConnectApp() {
       if (!seller) return;
       getSellerStats(seller.id)
         .then((nextStats) => {
-          setSellerStats(nextStats);
-          setSellerStatsCache(prev => ({ ...prev, [seller.id]: nextStats }));
+          const normalizedStats = {
+            activeListings: Number(nextStats.activeListings ?? 0),
+            averageRating: Number(nextStats.averageRating ?? nextStats.avgRating ?? 0),
+            totalReviews: Number(nextStats.totalReviews ?? 0),
+            salesDone: Number(nextStats.salesDone ?? nextStats.sales ?? 0),
+          };
+          setSellerStats(normalizedStats);
+          setSellerStatsCache(prev => {
+            const next = { ...prev, [seller.id]: normalizedStats };
+            localStorage.setItem('mc_seller_stats', JSON.stringify(next));
+            return next;
+          });
         })
         .catch(() => undefined);
     }, [seller?.id]);
