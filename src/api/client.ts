@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import type { Listing } from '../types';
 
 const normalizeApiUrl = (url: string): string => {
   const trimmed = url.trim();
@@ -653,6 +654,11 @@ export async function getSellerListings(sellerId: string) {
 
 export async function deleteListing(listingId: string) {
   const response = await api.delete(`/listings/${listingId}`, { headers: authHeaders() });
+  return response.data;
+}
+
+export async function updateListing(listingId: string, listingData: Partial<Listing>) {
+  const response = await api.put(`/listings/${listingId}`, listingData, { headers: authHeaders() });
   return response.data;
 }
 

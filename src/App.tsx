@@ -17,6 +17,7 @@ import {
   changePassword,
   getListings,
   deleteListing as deleteListingApi,
+  updateListing as updateListingApi,
   getUsers,
   createOrder,
   getUserOrders,
@@ -299,6 +300,7 @@ function MarketConnectApp() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
   const [verificationRefreshToken, setVerificationRefreshToken] = useState(0);
+  const [showMyListings, setShowMyListings] = useState(false);
   const prevProfileUserId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -1651,6 +1653,24 @@ function MarketConnectApp() {
     try {
       const token = localStorage.getItem('marketplace_access_token');
       if (token) {
+        if (editingListing) {
+          const updatedListing = await updateListingApi(editingListing.id, {
+            sellerId: currentUser.id,
+            sellerName: currentUser.name,
+            title: trimmedTitle,
+            description: trimmedDescription,
+            price: priceNum,
+            category: values.category,
+            location: values.location,
+            images: finalListing.images,
+          });
+          setListings(prev => prev.map(listing => listing.id === editingListing.id ? updatedListing : listing));
+          addNotification('Listing updated successfully!', 'success');
+          setEditingListing(null);
+          navigate(`/listing/${updatedListing.id}`);
+          return true;
+        }
+
         const createdListing = await createListing(
           currentUser.id,
           currentUser.name,
@@ -1670,7 +1690,9 @@ function MarketConnectApp() {
         return true;
       }
 
-      setListings(prev => [finalListing, ...prev]);
+      setListings(prev => editingListing
+        ? prev.map(listing => listing.id === editingListing.id ? finalListing : listing)
+        : [finalListing, ...prev]);
       notifyVerifiedSellerListing(finalListing, currentUser);
       addNotification(editingListing ? 'Listing updated locally.' : 'Listing saved locally because backend auth was unavailable.', 'warning');
       setEditingListing(null);
@@ -1678,7 +1700,9 @@ function MarketConnectApp() {
       return true;
     } catch (error: any) {
       console.error('Listing publish failed:', error?.response?.data || error?.message || error);
-      setListings(prev => [finalListing, ...prev]);
+      setListings(prev => editingListing
+        ? prev.map(listing => listing.id === editingListing.id ? finalListing : listing)
+        : [finalListing, ...prev]);
       notifyVerifiedSellerListing(finalListing, currentUser);
       addNotification(error?.response?.data?.error || error?.message || 'Listing saved locally after a publish error.', 'warning');
       setEditingListing(null);
@@ -3652,18 +3676,30 @@ function MarketConnectApp() {
             {/* My Listings for Sellers */}
             {currentUserSafe.role === 'seller' && (
               <div>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                   <div className="font-semibold text-xl">My Listings ({myListings.length})</div>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/new-listing')}
-                    className="flex items-center gap-2 rounded-3xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
-                  >
-                    <Plus className="h-4 w-4" />
-                    New listing
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowMyListings(prev => !prev)}
+                      className="rounded-3xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                    >
+                      {showMyListings ? 'Hide listings' : 'My listings'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingListing(null);
+                        navigate('/new-listing');
+                      }}
+                      className="flex items-center gap-2 rounded-3xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+                    >
+                      <Plus className="h-4 w-4" />
+                      New listing
+                    </button>
+                  </div>
                 </div>
-                {myListings.length > 0 ? (
+                {showMyListings && myListings.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     {myListings.map(listing => (
                       <div key={listing.id} className="bg-white border rounded-3xl overflow-hidden">
@@ -3679,7 +3715,7 @@ function MarketConnectApp() {
                       </div>
                     ))}
                   </div>
-                ) : <div className="text-center py-8 text-sm text-slate-400 border rounded-3xl">You have no active listings yet.</div>}
+                ) : showMyListings ? <div className="text-center py-8 text-sm text-slate-400 border rounded-3xl">You have no active listings yet.</div> : null}
               </div>
             )}
 
