@@ -3322,7 +3322,7 @@ function MarketConnectApp() {
   };
 
   // Render Helpers
-  const ListingCard = ({ listing, showSeller = true }: { listing: Listing; showSeller?: boolean }) => {
+  const renderListingCard = ({ listing, showSeller = true }: { listing: Listing; showSeller?: boolean }) => {
     const isFavorite = favorites.includes(listing.id);
     const rating = getSellerRating(listing.sellerId);
     const seller = users.find(u => u.id === listing.sellerId);
@@ -3638,7 +3638,7 @@ function MarketConnectApp() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredListings.length > 0 ? (
-                filteredListings.map(listing => <ListingCard key={listing.id} listing={listing} />)
+                filteredListings.map(listing => <React.Fragment key={listing.id}>{renderListingCard({ listing })}</React.Fragment>)
               ) : (
                 <div className="col-span-full py-20 text-center text-slate-400">No listings found matching your filters.</div>
               )}
@@ -3668,7 +3668,7 @@ function MarketConnectApp() {
               <div className="font-semibold mb-4 text-xl flex items-center gap-2"><Heart className="w-5 h-5 text-red-500" /> Saved Items ({favorites.length})</div>
               {favorites.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  {listings.filter(l => favorites.includes(l.id)).map(l => <ListingCard key={l.id} listing={l} />)}
+                  {listings.filter(l => favorites.includes(l.id)).map(l => <React.Fragment key={l.id}>{renderListingCard({ listing: l })}</React.Fragment>)}
                 </div>
               ) : <div className="text-slate-400">No saved items yet. Heart listings you like.</div>}
             </div>
