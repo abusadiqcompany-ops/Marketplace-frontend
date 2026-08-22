@@ -9,6 +9,8 @@ import { User as UserType, Listing, Message, Order, Review, Role, Transaction, R
 import {
   signup,
   login as apiLogin,
+  sendVerificationOtp,
+  verifyVerificationCode,
   logout as apiLogout,
   getCurrentUser,
   createListing,
@@ -426,6 +428,8 @@ function MarketConnectApp() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+  const [pendingSignupUser, setPendingSignupUser] = useState<UserType | null>(null);
+  const [emailOtp, setEmailOtp] = useState('');
   const [authInitialized, setAuthInitialized] = useState(false);
 
   const syncNotificationsForCurrentUser = useCallback((userOverride?: UserType | null) => {
@@ -496,7 +500,16 @@ function MarketConnectApp() {
     const savedUsers = localStorage.getItem('mc_users');
     const savedTransactions = localStorage.getItem('mc_transactions');
     const savedDeletionRequests = localStorage.getItem('mc_deletion_requests');
+    const savedPendingSignup = localStorage.getItem('mc_pending_signup');
     const token = localStorage.getItem('marketplace_access_token');
+
+    if (savedPendingSignup) {
+      try {
+        setPendingSignupUser(JSON.parse(savedPendingSignup));
+      } catch {
+        localStorage.removeItem('mc_pending_signup');
+      }
+    }
 
     if (savedUser && token) {
       try {
@@ -524,7 +537,7 @@ function MarketConnectApp() {
     if (savedTransactions) setTransactions(JSON.parse(savedTransactions));
     if (savedDeletionRequests) setDeletionRequests(JSON.parse(savedDeletionRequests));
 
-    if (token) {
+    if (token && !savedPendingSignup) {
       getCurrentUser()
         .then((user) => {
           setCurrentUser(user);
@@ -1441,6 +1454,35 @@ function MarketConnectApp() {
   };
 
   const handleRegister = async () => {
+    if (pendingSignupUser) {
+      if (!emailOtp.trim()) {
+        setAuthError('Enter the verification code sent to your email address.');
+        return;
+      }
+
+      setAuthLoading(true);
+      setAuthError(null);
+
+      try {
+        const response = await verifyVerificationCode('email', emailOtp);
+        const verifiedUser = response.user as UserType;
+        setCurrentUser(verifiedUser);
+        syncNotificationsForCurrentUser(verifiedUser);
+        localStorage.setItem('mc_currentUser', JSON.stringify(verifiedUser));
+        setPendingSignupUser(null);
+        setEmailOtp('');
+        localStorage.removeItem('mc_pending_signup');
+        setAuthSuccess(null);
+        navigateTo(verifiedUser.role === 'admin' ? 'admin' : 'discover');
+        addNotification('Account verified successfully!', 'success');
+      } catch (error: any) {
+        setAuthError(error?.response?.data?.error || error?.message || 'Verification failed.');
+      } finally {
+        setAuthLoading(false);
+      }
+      return;
+    }
+
     if (!registerForm.name || !registerForm.email || !registerForm.password) {
       setAuthError('Name, email, and password are required.');
       return;
@@ -1477,18 +1519,31 @@ function MarketConnectApp() {
         registerForm.role as 'buyer' | 'seller'
       );
       const successMessage = response.message || 'Verification codes have been sent to your email and phone number. Please check both to complete verification.';
+      setPendingSignupUser(response.user as UserType);
+      setEmailOtp('');
+      localStorage.setItem('mc_pending_signup', JSON.stringify(response.user));
       setAuthSuccess(successMessage);
       setRegisterForm({ name: '', email: '', password: '', confirmPassword: '', role: 'buyer' });
-      setTimeout(() => {
-        setCurrentUser(response.user);
-        syncNotificationsForCurrentUser(response.user);
-        localStorage.setItem('mc_currentUser', JSON.stringify(response.user));
-        setAuthSuccess(null);
-        navigateTo('discover');
-        addNotification('Account created successfully!', 'success');
-      }, 1400);
     } catch (error: any) {
       setAuthError(error?.response?.data?.error || error?.message || 'Registration failed.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleResendSignupOtp = async () => {
+    if (!pendingSignupUser) return;
+
+    setAuthLoading(true);
+    setAuthError(null);
+    setAuthSuccess(null);
+
+    try {
+      const response = await sendVerificationOtp('email');
+      setEmailOtp('');
+      setAuthSuccess(response.message || 'A new verification code was sent to your email address.');
+    } catch (error: any) {
+      setAuthError(error?.response?.data?.error || error?.message || 'Unable to resend the verification code.');
     } finally {
       setAuthLoading(false);
     }
@@ -3350,6 +3405,9 @@ function MarketConnectApp() {
         authError={authError}
         authSuccess={authSuccess}
         passwordError={passwordError}
+        pendingSignupEmail={pendingSignupUser?.email || ''}
+        emailOtp={emailOtp}
+        onResendEmailOtp={() => void handleResendSignupOtp()}
         onSubmit={(event) => {
           event.preventDefault();
           if (authMode === 'login') {
@@ -3360,6 +3418,7 @@ function MarketConnectApp() {
         }}
         onLoginFieldChange={(field, value) => setLoginForm(prev => ({ ...prev, [field]: value }))}
         onRegisterFieldChange={(field, value) => setRegisterForm(prev => ({ ...prev, [field]: value as never }))}
+        onEmailOtpChange={setEmailOtp}
         onTogglePasswordVisibility={() => setShowRegisterPassword((prev) => !prev)}
         onSwitchMode={(mode) => setAuthMode(mode)}
       />

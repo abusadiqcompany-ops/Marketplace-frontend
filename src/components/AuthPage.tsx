@@ -24,9 +24,13 @@ type AuthPageProps = {
   authError: string | null;
   authSuccess: string | null;
   passwordError: string | null;
+  pendingSignupEmail: string;
+  emailOtp: string;
+  onResendEmailOtp: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   onLoginFieldChange: (field: keyof LoginFormState, value: string) => void;
   onRegisterFieldChange: (field: keyof RegisterFormState, value: string) => void;
+  onEmailOtpChange: (value: string) => void;
   onTogglePasswordVisibility: () => void;
   onSwitchMode: (mode: 'login' | 'register') => void;
 };
@@ -40,9 +44,13 @@ export function AuthPage({
   authError,
   authSuccess,
   passwordError,
+  pendingSignupEmail,
+  emailOtp,
+  onResendEmailOtp,
   onSubmit,
   onLoginFieldChange,
   onRegisterFieldChange,
+  onEmailOtpChange,
   onTogglePasswordVisibility,
   onSwitchMode,
 }: AuthPageProps) {
@@ -83,7 +91,45 @@ export function AuthPage({
           )}
 
           <form onSubmit={onSubmit} className="space-y-4">
-            {authMode === 'login' ? (
+            {pendingSignupEmail ? (
+              <div className="space-y-5">
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                  <h3 className="text-xl font-semibold text-slate-950">Verify your email</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Enter the 6-digit code sent to <strong>{pendingSignupEmail}</strong> before continuing.
+                  </p>
+                </div>
+                <label htmlFor="signup-email-otp" className="sr-only">Email verification code</label>
+                <input
+                  id="signup-email-otp"
+                  name="emailOtp"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  pattern="[0-9]{6}"
+                  placeholder="Enter 6-digit code"
+                  value={emailOtp}
+                  onChange={(event) => onEmailOtpChange(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="w-full rounded-3xl border border-slate-200 bg-slate-100 px-5 py-4 text-center text-xl font-semibold tracking-[0.35em] text-slate-950 outline-none focus:border-emerald-500 focus:ring-emerald-500/20"
+                />
+                <button
+                  type="submit"
+                  disabled={authLoading || emailOtp.length !== 6}
+                  className="w-full rounded-3xl bg-emerald-600 px-5 py-4 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {authLoading ? 'Verifying code…' : 'Verify Email and Continue'}
+                </button>
+                <button
+                  type="button"
+                  onClick={onResendEmailOtp}
+                  disabled={authLoading}
+                  className="w-full text-sm font-semibold text-emerald-700 transition hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Resend code
+                </button>
+              </div>
+            ) : authMode === 'login' ? (
               <>
                 <input
                   id="login-email"
