@@ -272,6 +272,7 @@ function MarketConnectApp() {
   const [showPaymentModal, setShowPaymentModal] = useState<Order | null>(null);
   const [fulfillmentOrder, setFulfillmentOrder] = useState<Order | null>(null);
   const [showReviewModal, setShowReviewModal] = useState<Order | null>(null);
+  const [sellerStatsCache, setSellerStatsCache] = useState<Record<string, { activeListings: number; averageRating: number; totalReviews: number; salesDone: number }>>({});
 
   const navigateTo = (tab: string) => {
     const path = tab === 'discover' ? '/' : `/${tab}`;
@@ -2066,13 +2067,17 @@ function MarketConnectApp() {
   const SellerProfileRoute = () => {
     const { id } = useParams();
     const seller = users.find(user => user.id === id && user.role === 'seller');
-    const [sellerStats, setSellerStats] = useState({ activeListings: 0, averageRating: 0, totalReviews: 0, salesDone: 0 });
+    const defaultSellerStats = { activeListings: 0, averageRating: 0, totalReviews: 0, salesDone: 0 };
+    const [sellerStats, setSellerStats] = useState(() => (id && sellerStatsCache[id]) || defaultSellerStats);
 
     useEffect(() => {
       if (!seller) return;
       getSellerStats(seller.id)
-        .then(setSellerStats)
-        .catch(() => setSellerStats({ activeListings: 0, averageRating: 0, totalReviews: 0, salesDone: 0 }));
+        .then((nextStats) => {
+          setSellerStats(nextStats);
+          setSellerStatsCache(prev => ({ ...prev, [seller.id]: nextStats }));
+        })
+        .catch(() => undefined);
     }, [seller?.id]);
 
     if (!seller) {
