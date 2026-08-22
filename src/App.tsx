@@ -308,19 +308,29 @@ function MarketConnectApp() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
   const [verificationRefreshToken, setVerificationRefreshToken] = useState(0);
-  const [showMyListings, setShowMyListings] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    const storageKey = `mc_show_my_listings_${currentUser?.id || 'guest'}`;
-    const savedValue = localStorage.getItem(storageKey);
-    return savedValue === null ? true : savedValue === 'true';
-  });
+  const [myListingsVisibility, setMyListingsVisibility] = useState(() => ({
+    userId: currentUser?.id || 'guest',
+    visible: false,
+  }));
+  const showMyListings = myListingsVisibility.visible;
   const prevProfileUserId = useRef<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const storageKey = `mc_show_my_listings_${currentUser?.id || 'guest'}`;
-    localStorage.setItem(storageKey, String(showMyListings));
-  }, [currentUser?.id, showMyListings]);
+    const userId = currentUser?.id || 'guest';
+    const savedValue = localStorage.getItem(`mc_show_my_listings_${userId}`);
+    setMyListingsVisibility({
+      userId,
+      visible: savedValue === 'true',
+    });
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const userId = currentUser?.id || 'guest';
+    if (myListingsVisibility.userId !== userId) return;
+    localStorage.setItem(`mc_show_my_listings_${userId}`, String(myListingsVisibility.visible));
+  }, [currentUser?.id, myListingsVisibility]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -3714,7 +3724,7 @@ function MarketConnectApp() {
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => setShowMyListings(prev => !prev)}
+                      onClick={() => setMyListingsVisibility(prev => ({ ...prev, visible: !prev.visible }))}
                       className="rounded-3xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
                     >
                       {showMyListings ? 'Hide listings' : 'My listings'}
