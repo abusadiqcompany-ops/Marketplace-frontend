@@ -39,6 +39,18 @@ button, input, select, textarea {
   transform-origin: center;
 }
 
+.chat-composer {
+  width: 100%;
+}
+
+.chat-composer__action {
+  flex: 0 0 2.75rem;
+}
+
+.chat-composer__input {
+  width: 100%;
+}
+
 @media (max-width: 767px) {
   .chat-bubble {
     max-width: 88%;
@@ -51,6 +63,20 @@ button, input, select, textarea {
 
   .chat-bubble--incoming {
     border-bottom-left-radius: 0.3rem;
+  }
+
+  .chat-composer {
+    gap: 0.375rem;
+  }
+
+  .chat-composer__action {
+    flex-basis: 2.625rem;
+  }
+
+  .chat-composer__input {
+    font-size: 0.875rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
   }
 }
 

@@ -447,11 +447,11 @@ export const MessagesPage = ({
                   </div>
                 ) : null}
 
-                <div className="flex items-center gap-3">
+                <div className="chat-composer flex items-center gap-2">
                   <button
                     type="button"
                     onClick={pickImage}
-                    className="inline-flex items-center justify-center h-12 w-12 rounded-3xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    className="chat-composer__action inline-flex items-center justify-center h-11 w-11 rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                     aria-label="Attach photo"
                     title="Attach photo"
                   >
@@ -460,7 +460,7 @@ export const MessagesPage = ({
                   <button
                     type="button"
                     onClick={() => void toggleRecording()}
-                    className={`relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl border transition ${isRecording ? 'border-rose-300 bg-rose-50 text-rose-600 shadow-[0_0_0_5px_rgba(244,63,94,0.12)]' : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700'}`}
+                    className={`chat-composer__action relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition ${isRecording ? 'border-rose-300 bg-rose-50 text-rose-600 shadow-[0_0_0_5px_rgba(244,63,94,0.12)]' : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700'}`}
                     aria-label={isRecording ? 'Stop recording' : 'Record voice message'}
                     title={isRecording ? 'Stop recording and send' : 'Record voice message'}
                   >
@@ -476,12 +476,12 @@ export const MessagesPage = ({
                     value={newMessage}
                     onChange={(event) => onChangeMessage(event.target.value)}
                     placeholder="Write a message..."
-                    className="flex-1 rounded-3xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                    className="chat-composer__input min-w-0 flex-1 rounded-2xl border border-slate-200 px-3 py-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                   />
                   <button
                     type="button"
                     onClick={onSendMessage}
-                    className="inline-flex h-12 w-12 items-center justify-center rounded-3xl bg-emerald-600 text-white hover:bg-emerald-700"
+                    className="chat-composer__action inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white hover:bg-emerald-700"
                     aria-label="Send message"
                   >
                     <ArrowRight className="h-5 w-5" />
