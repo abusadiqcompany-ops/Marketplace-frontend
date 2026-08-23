@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, ArrowRight, ImagePlus, Mic, MicOff } from 'lucide-react';
+import { User, ArrowRight, ImagePlus, Mic, MicOff, Pause, Play, Send, Trash2, CheckCheck } from 'lucide-react';
 import type { User as UserType, Message } from '../types';
 
 export const MessagesPage = ({
@@ -46,9 +46,15 @@ export const MessagesPage = ({
   const [selected, setSelected] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingError, setRecordingError] = useState<string | null>(null);
+  const [recordingAudio, setRecordingAudio] = useState<string | null>(null);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [playbackSeconds, setPlaybackSeconds] = useState(0);
+  const [isPlayingRecording, setIsPlayingRecording] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recordingChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<number | null>(null);
+  const playbackRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -156,6 +162,13 @@ export const MessagesPage = ({
       return;
     }
 
+    if (recordingAudio) {
+      setRecordingAudio(null);
+      setRecordingSeconds(0);
+      setPlaybackSeconds(0);
+      setIsPlayingRecording(false);
+    }
+
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
       setRecordingError('Voice messages are not supported in this browser.');
       return;
@@ -174,23 +187,62 @@ export const MessagesPage = ({
         const audioBlob = new Blob(recordingChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
         const reader = new FileReader();
         reader.onload = () => {
-          if (typeof reader.result === 'string') onSendVoiceMessage(reader.result);
+          if (typeof reader.result === 'string') setRecordingAudio(reader.result);
         };
         reader.readAsDataURL(audioBlob);
         stream.getTracks().forEach(track => track.stop());
         recorderRef.current = null;
         setIsRecording(false);
+        if (recordingTimerRef.current) {
+          window.clearInterval(recordingTimerRef.current);
+          recordingTimerRef.current = null;
+        }
       };
       recorder.start();
       setIsRecording(true);
+      setRecordingSeconds(0);
+      recordingTimerRef.current = window.setInterval(() => {
+        setRecordingSeconds(seconds => seconds + 1);
+      }, 1000);
     } catch {
       setRecordingError('Microphone access was denied. Check your browser permissions and try again.');
       setIsRecording(false);
     }
   };
 
+  const formatDuration = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  const waveformBarCount = 32;
+
+  const toggleRecordingPlayback = () => {
+    const audio = playbackRef.current;
+    if (!audio) return;
+    if (audio.paused) {
+      void audio.play();
+      setIsPlayingRecording(true);
+    } else {
+      audio.pause();
+      setIsPlayingRecording(false);
+    }
+  };
+
+  const discardRecording = () => {
+    playbackRef.current?.pause();
+    setRecordingAudio(null);
+    setRecordingSeconds(0);
+    setPlaybackSeconds(0);
+    setIsPlayingRecording(false);
+  };
+
+  const sendRecording = () => {
+    if (!recordingAudio) return;
+    onSendVoiceMessage(recordingAudio);
+    discardRecording();
+  };
+
   useEffect(() => () => {
     if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
+    if (recordingTimerRef.current) window.clearInterval(recordingTimerRef.current);
+    playbackRef.current?.pause();
   }, []);
 
   return (
@@ -293,8 +345,8 @@ export const MessagesPage = ({
                   const isMine = message.senderId === currentUser?.id;
                   return (
                     <div key={message.id} className={`max-w-[85%] ${isMine ? 'ml-auto text-right' : 'mr-auto text-left'}`}>
-                      <div className={`inline-flex flex-col gap-2 rounded-3xl px-4 py-3 text-sm ${isMine ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-900'}`}>
-                        <div className="font-medium">{message.senderName}</div>
+                      <div className={`chat-bubble inline-flex flex-col gap-2 px-4 py-3 text-sm ${isMine ? 'chat-bubble--mine bg-emerald-600 text-white' : 'chat-bubble--incoming bg-slate-100 text-slate-900'}`}>
+                        {!isMine && <div className="font-medium">{message.senderName}</div>}
                         {message.image ? (
                           <img
                             src={message.image}
@@ -308,7 +360,10 @@ export const MessagesPage = ({
                         {message.audio ? (
                           <audio controls src={message.audio} className="max-w-full" aria-label="Voice message" />
                         ) : null}
-                        <div className="text-[11px] text-slate-400 mt-1">{formatTimestamp(message.timestamp)}</div>
+                        <div className={`mt-1 flex items-center justify-end gap-1 text-[10px] leading-none ${isMine ? 'text-emerald-100' : 'text-slate-400'}`}>
+                          <span>{formatTimestamp(message.timestamp)}</span>
+                          {isMine && <CheckCheck className="h-3.5 w-3.5 text-emerald-100" aria-label="Read" />}
+                        </div>
                       </div>
                     </div>
                   );
@@ -332,6 +387,65 @@ export const MessagesPage = ({
                   </div>
                 ) : null}
                 {recordingError ? <div className="text-sm text-rose-600">{recordingError}</div> : null}
+                {(isRecording || recordingAudio) ? (
+                  <div className={`rounded-3xl border p-3 ${isRecording ? 'border-rose-200 bg-rose-50' : 'border-emerald-200 bg-emerald-50'}`}>
+                    <div className="flex items-center gap-3">
+                      {recordingAudio ? (
+                        <button
+                          type="button"
+                          onClick={toggleRecordingPlayback}
+                          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-white hover:bg-slate-700"
+                          aria-label={isPlayingRecording ? 'Pause voice preview' : 'Play voice preview'}
+                          title={isPlayingRecording ? 'Pause preview' : 'Play preview'}
+                        >
+                          {isPlayingRecording ? <Pause className="h-5 w-5" /> : <Play className="ml-0.5 h-5 w-5" />}
+                        </button>
+                      ) : (
+                        <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-500 text-white">
+                          <Mic className="h-5 w-5 animate-pulse" />
+                        </span>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-2 flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                          <span>{isRecording ? 'Recording voice' : 'Voice preview'}</span>
+                          <span className="tabular-nums">{formatDuration(recordingAudio ? Math.max(recordingSeconds, Math.ceil(playbackSeconds)) : recordingSeconds)}</span>
+                        </div>
+                        <div className="voice-waveform flex h-7 items-center gap-1 overflow-hidden" aria-label="Audio waveform progress">
+                          {Array.from({ length: waveformBarCount }, (_, index) => {
+                            const progress = recordingAudio && recordingSeconds > 0 ? playbackSeconds / recordingSeconds : isRecording ? 1 : 0;
+                            const active = index / waveformBarCount <= progress;
+                            const height = [10, 18, 13, 24, 16, 27, 12, 21, 29, 15, 23, 11, 19, 26, 14, 22][index % 16];
+                            return <span key={index} className={`w-1.5 rounded-full transition-colors ${active ? 'bg-emerald-500' : 'bg-slate-300'}`} style={{ height }} />;
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                    {recordingAudio ? (
+                      <>
+                        <audio
+                          ref={playbackRef}
+                          src={recordingAudio}
+                          className="hidden"
+                          onTimeUpdate={(event) => setPlaybackSeconds(event.currentTarget.currentTime)}
+                          onEnded={() => {
+                            setIsPlayingRecording(false);
+                            setPlaybackSeconds(0);
+                          }}
+                        />
+                        <div className="mt-3 flex gap-2">
+                          <button type="button" onClick={discardRecording} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                            <Trash2 className="h-4 w-4" /> Delete
+                          </button>
+                          <button type="button" onClick={sendRecording} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
+                            <Send className="h-4 w-4" /> Send voice
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="mt-2 text-xs font-medium text-rose-600">Tap the microphone button to stop and review</div>
+                    )}
+                  </div>
+                ) : null}
 
                 <div className="flex items-center gap-3">
                   <button
