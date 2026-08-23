@@ -246,11 +246,10 @@ export const MessagesPage = ({
   }, []);
 
   return (
-    <div className="pt-4 w-full" tabIndex={0} ref={containerRef} onKeyDown={handleKeyDown}>
-      <div className="px-4 pb-3">
+    <div className={`messages-page pt-4 w-full ${activeChat ? 'messages-page--active' : ''}`} tabIndex={0} ref={containerRef} onKeyDown={handleKeyDown}>
+      {!activeChat && <div className="px-4 pb-3">
         <div className="text-3xl font-semibold">Messages</div>
-        <p className="text-slate-600 mt-1 text-sm">Connect with buyers and sellers</p>
-      </div>
+      </div>}
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)]">
         <div className={`bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm ${activeChat ? 'hidden lg:block' : 'block'}`}>
@@ -307,7 +306,7 @@ export const MessagesPage = ({
         </div>
 
         {activeChat ? (
-          <div className="bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col overflow-hidden min-h-[calc(100vh-180px)]">
+          <div className="messages-conversation bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col overflow-hidden min-h-[calc(100vh-180px)]">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <button

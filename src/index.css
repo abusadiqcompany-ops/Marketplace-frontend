@@ -51,7 +51,34 @@ button, input, select, textarea {
   width: 100%;
 }
 
+.messages-conversation {
+  min-height: 0;
+}
+
 @media (max-width: 767px) {
+  .messages-page--active {
+    margin: -1rem -1.5rem -3rem;
+    width: auto;
+    padding-top: 0;
+  }
+
+  .messages-page--active .grid {
+    gap: 0;
+  }
+
+  .messages-page--active .messages-conversation {
+    height: calc(100dvh - 5rem);
+    min-height: calc(100dvh - 5rem);
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .messages-page--active .messages-conversation > #chat-scroll {
+    min-height: 0;
+  }
+
   .chat-bubble {
     max-width: 88%;
     border-radius: 1.1rem;
