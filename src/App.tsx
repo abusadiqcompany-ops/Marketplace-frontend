@@ -254,6 +254,7 @@ function MarketConnectApp() {
       return {};
     }
   });
+  const chatLoadVersionRef = useRef(0);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -269,6 +270,7 @@ function MarketConnectApp() {
     setChatLastRead(prev => ({ ...prev, [chatId]: new Date().toISOString() }));
   };
   const [showOrderModal, setShowOrderModal] = useState<Listing | null>(null);
+  const [orderRequestSent, setOrderRequestSent] = useState<Listing | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState<Order | null>(null);
   const [fulfillmentOrder, setFulfillmentOrder] = useState<Order | null>(null);
   const [showReviewModal, setShowReviewModal] = useState<Order | null>(null);
@@ -1078,6 +1080,8 @@ function MarketConnectApp() {
       return;
     }
 
+    const loadVersion = ++chatLoadVersionRef.current;
+
     const chatId = currentUser.role === 'admin' && conv.chatId
       ? conv.chatId
       : [currentUser.id, conv.otherUserId].sort().join('-') + (conv.listingId ? `-${conv.listingId}` : '');
@@ -1106,15 +1110,20 @@ function MarketConnectApp() {
       .then(async (response) => {
         if (!response.ok) throw new Error('Unable to load remote messages');
         const remoteMessages = await response.json() as Message[];
-        const mergedMessages = [...messages.filter(m => m.chatId !== chatId), ...remoteMessages]
-          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-        setMessages(prev => [...prev.filter(m => m.chatId !== chatId), ...remoteMessages]);
-        setChatMessages(mergedMessages);
+        if (loadVersion !== chatLoadVersionRef.current) return;
+        const sortedRemoteMessages = [...remoteMessages].sort((a, b) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+        setMessages(prev => [...prev.filter(m => m.chatId !== chatId), ...sortedRemoteMessages]);
+        setChatMessages(sortedRemoteMessages);
       })
       .catch(() => {
+        if (loadVersion !== chatLoadVersionRef.current) return;
         setChatMessages(chatMsgs);
       })
-      .finally(() => setChatSyncing(false));
+      .finally(() => {
+        if (loadVersion === chatLoadVersionRef.current) setChatSyncing(false);
+      });
   }, [currentUser, messages, navigateTo]);
 
   useEffect(() => {
@@ -1125,7 +1134,13 @@ function MarketConnectApp() {
       .filter(message => message.chatId === chatId)
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-    setChatMessages(nextMessages);
+    setChatMessages(prev => {
+      const isSameThread = prev.length === nextMessages.length && prev.every((message, index) => {
+        const nextMessage = nextMessages[index];
+        return message.id === nextMessage?.id && message.timestamp === nextMessage?.timestamp;
+      });
+      return isSameThread ? prev : nextMessages;
+    });
   }, [messages, activeChat, currentUser]);
 
   useEffect(() => {
@@ -1204,7 +1219,6 @@ function MarketConnectApp() {
     };
 
     setMessages(prev => [...prev, message]);
-    setChatMessages(prev => [...prev, message]);
     setNewMessage('');
     setChatImage(null);
     addNotification(`Message sent to ${activeChat.otherUserName}`, 'message');
@@ -1234,6 +1248,50 @@ function MarketConnectApp() {
       }
     } catch (error) {
       console.warn('[chat] Remote sync failed, staying local.', error);
+    }
+  };
+
+  const sendVoiceMessage = async (audio: string) => {
+    if (!activeChat || !currentUser || currentUser.role === 'admin') return;
+
+    const chatId = [currentUser.id, activeChat.otherUserId].sort().join('-') +
+                   (activeChat.listingId ? `-${activeChat.listingId}` : '');
+    const message: Message = {
+      id: 'm' + Date.now(),
+      chatId,
+      senderId: currentUser.id,
+      senderName: currentUser.name,
+      content: '',
+      audio,
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, message]);
+    addNotification(`Voice message sent to ${activeChat.otherUserName}`, 'message');
+
+    const token = getAccessToken();
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL ? normalizeApiUrl(import.meta.env.VITE_API_URL) : ''}/api/chat/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          senderId: currentUser.id,
+          senderName: currentUser.name,
+          content: '',
+          audio,
+          recipientId: activeChat.otherUserId,
+          listingId: activeChat.listingId,
+        }),
+      });
+
+      if (!response.ok) console.warn('[chat] Remote voice sync failed, status', response.status);
+    } catch (error) {
+      console.warn('[chat] Remote voice sync failed, staying local.', error);
     }
   };
 
@@ -1974,6 +2032,7 @@ function MarketConnectApp() {
       navigate(LOGIN_PATH);
       return;
     }
+    setOrderRequestSent(null);
     setShowOrderModal(listing);
     setOrderNotes('');
     setOrderQuantity(1);
@@ -2010,15 +2069,8 @@ function MarketConnectApp() {
 
       setOrders(prev => [{ ...createdOrder, price: totalAmount, quantity: Math.max(1, orderQuantity), color: orderColor }, ...prev]);
       setShowOrderModal(null);
+      setOrderRequestSent(showOrderModal);
       addNotification('Order request sent! Seller will respond shortly.', 'success');
-
-      const conv: ChatConversation = {
-        otherUserId: showOrderModal.sellerId,
-        otherUserName: showOrderModal.sellerName,
-        listingId: showOrderModal.id,
-        listingTitle: showOrderModal.title
-      };
-      setTimeout(() => loadChat(conv), 600);
     } catch (error: any) {
       console.error('Order placement failed:', error);
       const backendMessage = error?.response?.data?.error || error?.message || 'Unable to place order.';
@@ -3512,6 +3564,10 @@ function MarketConnectApp() {
         onEmailOtpChange={setEmailOtp}
         onTogglePasswordVisibility={() => setShowRegisterPassword((prev) => !prev)}
         onSwitchMode={(mode) => setAuthMode(mode)}
+        onCancel={() => {
+          setAuthMode('login');
+          navigate('/');
+        }}
       />
     );
   }
@@ -3572,7 +3628,9 @@ function MarketConnectApp() {
                   newMessage={newMessage}
                   onChangeMessage={setNewMessage}
                   onSendMessage={sendMessage}
+                  onSendVoiceMessage={sendVoiceMessage}
                   onCloseConversation={() => {
+                    chatLoadVersionRef.current += 1;
                     setShowChat(false);
                     setActiveChat(null);
                     setChatMessages([]);
@@ -4541,6 +4599,48 @@ function MarketConnectApp() {
             <div className="flex gap-4 mt-7">
               <button onClick={() => setShowOrderModal(null)} className="flex-1 py-3.5 border rounded-3xl">Cancel</button>
               <button onClick={confirmOrder} className="flex-1 py-3.5 bg-emerald-600 text-white rounded-3xl font-medium">Send Request</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Order request sent modal */}
+      {orderRequestSent && (
+        <div className="fixed inset-0 z-[70] bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md p-8">
+            <div className="font-semibold text-3xl mb-3 tracking-tight">Request sent</div>
+            <p className="text-sm leading-6 text-slate-600">
+              Your request for <span className="font-semibold text-slate-900">{orderRequestSent.title}</span> has been sent to {orderRequestSent.sellerName}.
+            </p>
+            <p className="mt-3 text-sm leading-6 text-slate-500">Would you like to message the seller about your request?</p>
+
+            <div className="flex gap-4 mt-7">
+              <button
+                type="button"
+                onClick={() => {
+                  setOrderRequestSent(null);
+                  navigateTo('discover');
+                }}
+                className="flex-1 py-3.5 border border-slate-200 rounded-3xl text-slate-700"
+              >
+                Back to discover
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const listing = orderRequestSent;
+                  setOrderRequestSent(null);
+                  loadChat({
+                    otherUserId: listing.sellerId,
+                    otherUserName: listing.sellerName,
+                    listingId: listing.id,
+                    listingTitle: listing.title,
+                  });
+                }}
+                className="flex-1 py-3.5 bg-emerald-600 text-white rounded-3xl font-medium"
+              >
+                Message seller
+              </button>
             </div>
           </div>
         </div>

@@ -33,6 +33,7 @@ type AuthPageProps = {
   onEmailOtpChange: (value: string) => void;
   onTogglePasswordVisibility: () => void;
   onSwitchMode: (mode: 'login' | 'register') => void;
+  onCancel: () => void;
 };
 
 export function AuthPage({
@@ -53,6 +54,7 @@ export function AuthPage({
   onEmailOtpChange,
   onTogglePasswordVisibility,
   onSwitchMode,
+  onCancel,
 }: AuthPageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-950 text-white flex items-center justify-center px-4 py-12">
@@ -161,7 +163,7 @@ export function AuthPage({
                   </button>
                   <button
                     type="button"
-                    onClick={() => onSwitchMode('register')}
+                    onClick={onCancel}
                     className="w-full rounded-3xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-500 hover:text-emerald-600"
                   >
                     Cancel
@@ -244,7 +246,7 @@ export function AuthPage({
                   </button>
                   <button
                     type="button"
-                    onClick={() => onSwitchMode('login')}
+                    onClick={onCancel}
                     className="w-full rounded-3xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                   >
                     Cancel

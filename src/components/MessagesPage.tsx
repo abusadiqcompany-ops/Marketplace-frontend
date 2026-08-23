@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, ArrowRight, ImagePlus } from 'lucide-react';
+import { User, ArrowRight, ImagePlus, Mic, MicOff } from 'lucide-react';
 import type { User as UserType, Message } from '../types';
 
 export const MessagesPage = ({
@@ -16,6 +16,7 @@ export const MessagesPage = ({
   newMessage,
   onChangeMessage,
   onSendMessage,
+  onSendVoiceMessage,
   onCloseConversation,
   onOpenChatUserProfile,
   timestampLocale,
@@ -35,6 +36,7 @@ export const MessagesPage = ({
   newMessage: string;
   onChangeMessage: (value: string) => void;
   onSendMessage: () => void;
+  onSendVoiceMessage: (audio: string) => void;
   onCloseConversation: () => void;
   onOpenChatUserProfile: () => void;
   timestampLocale?: string;
@@ -42,7 +44,11 @@ export const MessagesPage = ({
   onOpenConversation: (conv: any) => void;
 }) => {
   const [selected, setSelected] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordingChunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -116,6 +122,7 @@ export const MessagesPage = ({
     if (!lastMessage) return null;
     if (lastMessage.content) return lastMessage.content;
     if (lastMessage.image) return 'Photo';
+    if (lastMessage.audio) return 'Voice message';
     return null;
   };
 
@@ -142,6 +149,49 @@ export const MessagesPage = ({
 
     event.target.value = '';
   };
+
+  const toggleRecording = async () => {
+    if (isRecording) {
+      recorderRef.current?.stop();
+      return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setRecordingError('Voice messages are not supported in this browser.');
+      return;
+    }
+
+    try {
+      setRecordingError(null);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      recordingChunksRef.current = [];
+      recorderRef.current = recorder;
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) recordingChunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        const audioBlob = new Blob(recordingChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') onSendVoiceMessage(reader.result);
+        };
+        reader.readAsDataURL(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+        recorderRef.current = null;
+        setIsRecording(false);
+      };
+      recorder.start();
+      setIsRecording(true);
+    } catch {
+      setRecordingError('Microphone access was denied. Check your browser permissions and try again.');
+      setIsRecording(false);
+    }
+  };
+
+  useEffect(() => () => {
+    if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
+  }, []);
 
   return (
     <div className="pt-4 w-full" tabIndex={0} ref={containerRef} onKeyDown={handleKeyDown}>
@@ -255,6 +305,9 @@ export const MessagesPage = ({
                         {message.content ? (
                           <div className="whitespace-pre-wrap break-words">{message.content}</div>
                         ) : null}
+                        {message.audio ? (
+                          <audio controls src={message.audio} className="max-w-full" aria-label="Voice message" />
+                        ) : null}
                         <div className="text-[11px] text-slate-400 mt-1">{formatTimestamp(message.timestamp)}</div>
                       </div>
                     </div>
@@ -278,6 +331,7 @@ export const MessagesPage = ({
                     <button type="button" onClick={() => onSelectChatImage(null)} className="text-sm text-red-500">Remove</button>
                   </div>
                 ) : null}
+                {recordingError ? <div className="text-sm text-rose-600">{recordingError}</div> : null}
 
                 <div className="flex items-center gap-3">
                   <button
@@ -285,8 +339,22 @@ export const MessagesPage = ({
                     onClick={pickImage}
                     className="inline-flex items-center justify-center h-12 w-12 rounded-3xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                     aria-label="Attach photo"
+                    title="Attach photo"
                   >
                     <ImagePlus className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void toggleRecording()}
+                    className={`relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl border transition ${isRecording ? 'border-rose-300 bg-rose-50 text-rose-600 shadow-[0_0_0_5px_rgba(244,63,94,0.12)]' : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700'}`}
+                    aria-label={isRecording ? 'Stop recording' : 'Record voice message'}
+                    title={isRecording ? 'Stop recording and send' : 'Record voice message'}
+                  >
+                    {isRecording ? (
+                      <MicOff className="h-5 w-5 animate-pulse" />
+                    ) : (
+                      <Mic className="h-5 w-5" />
+                    )}
                   </button>
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onImageChange} />
                   <input

@@ -86,6 +86,7 @@ export interface Message {
   senderName: string;
   content: string;
   image?: string;
+  audio?: string;
   timestamp: string;
 }
 
