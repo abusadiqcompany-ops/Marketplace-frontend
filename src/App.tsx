@@ -48,6 +48,7 @@ import {
   resolveAdminReport,
   initializeMembershipVerificationPayment,
   verifyMembershipVerificationPayment,
+  payMembershipVerificationWithWallet,
   approveUserVerification,
   requestUserVerification,
   deleteAdminUser,
@@ -238,7 +239,7 @@ function MarketConnectApp() {
     avatar: 'https://i.pravatar.cc/150?img=11',
     walletBalance: 0,
     verified: false,
-    verificationRequestStatus: 'pending',
+    verificationRequestStatus: 'unrequested',
     verificationBadgeType: 'active_member',
   };
   const [users, setUsers] = useState<UserType[]>([]);
@@ -650,6 +651,19 @@ function MarketConnectApp() {
       setAuthInitialized(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!authInitialized || !currentUser) return;
+
+    const refreshVerificationRequest = () => {
+      getCurrentUser()
+        .then((freshUser) => setCurrentUser(freshUser))
+        .catch(() => undefined);
+    };
+
+    window.addEventListener('focus', refreshVerificationRequest);
+    return () => window.removeEventListener('focus', refreshVerificationRequest);
+  }, [authInitialized, currentUser?.id]);
 
   // Save to localStorage
   useEffect(() => {
@@ -3237,32 +3251,22 @@ function MarketConnectApp() {
     if (!currentUser) return;
 
     setVerifyingUserId(currentUser.id);
-    setVerificationMessage('Preparing payment…');
+    setVerificationMessage('Processing verification payment…');
 
     try {
-      const amount = currentUser.verificationRequestStatus === 'pending' && currentUser.verificationFee
-        ? Number(currentUser.verificationFee)
-        : Number(verificationAmount || 5000);
-
-      const result = await initializeMembershipVerificationPayment(currentUser.id, amount, verificationProvider);
-
-      if (result?.authorization_url) {
-        setVerificationMessage(`Redirecting to Paystack…`);
-        window.location.href = result.authorization_url;
-        return;
-      }
-
-      if (result?.link) {
-        setVerificationMessage(`Redirecting to Flutterwave…`);
-        window.location.href = result.link;
-        return;
-      }
-
-      setVerificationMessage('The payment could not be started. Please try again.');
+      const result = await payMembershipVerificationWithWallet(currentUser.id);
+      const nextUser = result.user as UserType;
+      const nextBalance = Number(result.balance ?? currentUser.walletBalance ?? 0);
+      setCurrentUser(prev => prev ? { ...prev, ...nextUser, walletBalance: nextBalance } : nextUser);
+      setWalletBalance(nextBalance);
+      setVerificationRefreshToken(prev => prev + 1);
+      setVerificationMessage(`Payment of ₦${Number(result.amount || currentUser.verificationFee || 0).toFixed(2)} completed. Your verification is approved.`);
+      const walletTransactions = await getTransactionHistory(currentUser.id);
+      setTransactions(walletTransactions);
+      addNotification('Verification payment completed and account approved.', 'success');
     } catch (error: any) {
       console.error(error);
-      setVerificationMessage('Unable to start verification payment.');
-      addNotification(error?.response?.data?.error || error?.message || 'Unable to start verification payment.', 'error');
+      setVerificationMessage(error?.response?.data?.error || error?.message || 'Unable to complete verification payment.');
     } finally {
       setVerifyingUserId(null);
     }
@@ -3826,9 +3830,9 @@ function MarketConnectApp() {
             {currentUserSafe.verificationRequestStatus === 'pending' && !currentUserSafe.verified && (
               <div className="mb-8 rounded-3xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
                 <div className="font-semibold">Verification request from admin</div>
-                <p className="mt-1 text-sm">Admin has requested your verification. Complete the payment from your Profile to activate your verification badge.</p>
-                <button type="button" onClick={() => navigate('/profile')} className="mt-4 rounded-2xl bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800">
-                  Open Profile
+                <p className="mt-1 text-sm">Admin has requested your verification. Pay ₦{currentUserSafe.verificationFee || verificationAmount} from your wallet to activate your verification badge.</p>
+                <button type="button" onClick={payVerificationFee} disabled={verifyingUserId === currentUserSafe.id} className="mt-4 rounded-2xl bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800 disabled:opacity-60">
+                  {verifyingUserId === currentUserSafe.id ? 'Processing…' : 'Complete Payment'}
                 </button>
               </div>
             )}
@@ -4271,7 +4275,7 @@ function MarketConnectApp() {
                   <button onClick={() => setShowDeleteAccountModal(true)} className="px-6 py-3.5 border border-rose-300 text-rose-600 rounded-3xl font-medium">Delete Account</button>
                   {currentUserSafe.verificationRequestStatus === 'pending' && !currentUserSafe.verified && (
                     <button onClick={payVerificationFee} disabled={verifyingUserId === currentUserSafe.id} className="px-6 py-3.5 bg-emerald-600 text-white rounded-3xl font-medium disabled:opacity-60">
-                      {verifyingUserId === currentUserSafe.id ? 'Processing…' : `Pay ₦${currentUserSafe.verificationFee || verificationAmount} for ${currentUserSafe.verificationBadgeType === 'verified_seller' ? 'Verified Seller' : 'Active Member'}`}
+                      {verifyingUserId === currentUserSafe.id ? 'Processing…' : 'Complete Payment'}
                     </button>
                   )}
                   <button onClick={() => {
@@ -4333,7 +4337,7 @@ function MarketConnectApp() {
                     ) : (
                       <div className="text-sm text-slate-500">Await admin verification request to set your badge type and payment amount before you can pay.</div>
                     )}
-                    <div className="mt-3 text-xs text-slate-500">After payment, the admin will review and approve your account.</div>
+                    <div className="mt-3 text-xs text-slate-500">Payment is deducted from your wallet and your verification is approved automatically.</div>
                     {verificationMessage && <div className="mt-3 text-emerald-600">{verificationMessage}</div>}
                   </div>
                 )}

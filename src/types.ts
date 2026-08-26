@@ -45,7 +45,7 @@ export interface User {
   verificationLevel?: 'unverified' | 'basic' | 'full';
   verificationFee?: number;
   verificationBadgeType?: 'active_member' | 'verified_seller';
-  verificationRequestStatus?: 'pending' | 'paid' | 'approved';
+  verificationRequestStatus?: 'unrequested' | 'pending' | 'paid' | 'approved';
   emailVerified?: boolean;
   phoneVerified?: boolean;
   emailOtp?: string;

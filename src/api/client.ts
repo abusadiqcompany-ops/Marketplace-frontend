@@ -356,6 +356,11 @@ export async function verifyMembershipVerificationPayment(userId: string, provid
   return response.data;
 }
 
+export async function payMembershipVerificationWithWallet(userId: string) {
+  const response = await api.post(`/users/${userId}/verify-membership/pay-wallet`, {}, { headers: authHeaders() });
+  return response.data;
+}
+
 export async function approveUserVerification(userId: string, badgeType: 'active_member' | 'verified_seller', verificationFee?: number) {
   const response = await api.post(`/admin/users/${userId}/approve-verification`, { badgeType, verificationFee }, { headers: authHeaders() });
   return response.data;
