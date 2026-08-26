@@ -19,6 +19,7 @@ import {
   deleteListing as deleteListingApi,
   updateListing as updateListingApi,
   getUsers,
+  getUserById,
   createOrder,
   getUserOrders,
   acceptOrder,
@@ -138,6 +139,64 @@ const normalizeStoredAppNotifications = (notifications: AppNotification[]) =>
 
 const buildInitialAppNotifications = (): AppNotification[] => [];
 
+const compactUserForStorage = (user: Partial<UserType>) => {
+  const normalizeLocation = (location?: UserType['location'] | UserType['sellerLocation']) => {
+    if (!location) return undefined;
+    if (typeof location === 'string') return location;
+    if (typeof location === 'object' && 'city' in location && 'state' in location && 'country' in location) {
+      return {
+        city: location.city,
+        state: location.state,
+        country: location.country,
+      };
+    }
+    return undefined;
+  };
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    avatar: typeof user.avatar === 'string' && user.avatar.startsWith('data:') ? '' : user.avatar,
+    walletBalance: user.walletBalance,
+    verified: user.verified,
+    verificationLevel: user.verificationLevel,
+    verificationFee: user.verificationFee,
+    verificationBadgeType: user.verificationBadgeType,
+    verificationRequestStatus: user.verificationRequestStatus,
+    location: normalizeLocation(user.location),
+    sellerLocation: normalizeLocation(user.sellerLocation),
+    businessName: user.businessName,
+    description: user.description ? String(user.description).slice(0, 280) : undefined,
+    phone: user.phone,
+    buyerPreferences: user.buyerPreferences ? {
+      preferredLocations: (user.buyerPreferences.preferredLocations || []).slice(0, 3),
+      searchRadius: user.buyerPreferences.searchRadius,
+    } : undefined,
+  };
+};
+
+const safeSetStorageJson = (key: string, value: unknown) => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      console.warn(`Storage quota exceeded for ${key}; dropping cached data.`);
+      window.localStorage.removeItem(key);
+      return;
+    }
+    console.warn(`Unable to cache ${key}.`, error);
+  }
+};
+
+const persistUsers = (users: UserType[]) => {
+  if (typeof window === 'undefined') return;
+  safeSetStorageJson('mc_users', users.map(compactUserForStorage));
+};
+
 const saveListingsToStorage = (listings: Listing[]) => {
   if (typeof window === 'undefined') return;
 
@@ -206,10 +265,13 @@ function MarketConnectApp() {
   const navigate = useNavigate();
   const location = useLocation();
   const LOGIN_PATH = '/login';
+  const isPublicSellerRoute = location.pathname.startsWith('/seller/');
 
   useEffect(() => {
     const hasStoredSession = Boolean(localStorage.getItem('mc_currentUser') && localStorage.getItem('marketplace_access_token'));
-    if (!currentUser && !hasStoredSession && location.pathname !== LOGIN_PATH && location.pathname !== '/') {
+    const isAllowedGuestPath = location.pathname === LOGIN_PATH || location.pathname === '/' || isPublicSellerRoute;
+
+    if (!currentUser && !hasStoredSession && !isAllowedGuestPath) {
       navigate('/', { replace: true });
       return;
     }
@@ -217,7 +279,7 @@ function MarketConnectApp() {
     if (currentUser && location.pathname === LOGIN_PATH) {
       navigate('/', { replace: true });
     }
-  }, [currentUser, location.pathname, navigate]);
+  }, [currentUser, location.pathname, navigate, isPublicSellerRoute]);
 
   const getActiveTab = () => {
     const path = location.pathname || '/';
@@ -591,14 +653,14 @@ function MarketConnectApp() {
 
   // Save to localStorage
   useEffect(() => {
-    if (currentUser) localStorage.setItem('mc_currentUser', JSON.stringify(currentUser));
+    if (currentUser) safeSetStorageJson('mc_currentUser', currentUser);
     saveListingsToStorage(listings);
-    localStorage.setItem('mc_messages', JSON.stringify(messages));
-    localStorage.setItem('mc_orders', JSON.stringify(orders));
-    localStorage.setItem('mc_reviews', JSON.stringify(reviews));
-    localStorage.setItem('mc_favorites', JSON.stringify(favorites));
-    localStorage.setItem('mc_users', JSON.stringify(users));
-    localStorage.setItem('mc_transactions', JSON.stringify(transactions));
+    safeSetStorageJson('mc_messages', messages);
+    safeSetStorageJson('mc_orders', orders);
+    safeSetStorageJson('mc_reviews', reviews);
+    safeSetStorageJson('mc_favorites', favorites);
+    persistUsers(users);
+    safeSetStorageJson('mc_transactions', transactions);
   }, [currentUser, listings, messages, orders, reviews, favorites, users, transactions]);
 
   // Calculate unread messages
@@ -671,12 +733,20 @@ function MarketConnectApp() {
 
   useEffect(() => {
     const loadUsers = async () => {
-      if (!authInitialized || !currentUser) {
+      const publicSellerId = location.pathname.startsWith('/seller/')
+        ? decodeURIComponent(location.pathname.split('/')[2] || '')
+        : '';
+      if (!authInitialized || (!currentUser && !publicSellerId)) {
         setUsers([]);
         return;
       }
 
       try {
+        if (!currentUser && publicSellerId) {
+          const publicSeller = await getUserById(publicSellerId);
+          if (publicSeller) setUsers([publicSeller as UserType]);
+          return;
+        }
         const remoteUsers = await getUsers();
         if (Array.isArray(remoteUsers)) {
           setUsers(remoteUsers as UserType[]);
@@ -687,7 +757,7 @@ function MarketConnectApp() {
     };
 
     loadUsers();
-  }, [authInitialized, currentUser?.id]);
+  }, [authInitialized, currentUser?.id, location.pathname]);
 
   useEffect(() => {
     const loadAdminData = async () => {
@@ -3017,16 +3087,14 @@ function MarketConnectApp() {
     setCurrentUser(prev => {
       const next = prev ? { ...prev, ...updatedUser } : null;
       if (next && typeof window !== 'undefined') {
-        localStorage.setItem('mc_currentUser', JSON.stringify(next));
+        safeSetStorageJson('mc_currentUser', next);
       }
       return next;
     });
     setProfileForm(prev => ({ ...prev, ...updatedUser }));
     setUsers(prev => {
       const next = prev.map(item => item.id === updatedUser.id ? { ...item, ...updatedUser } as UserType : item);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('mc_users', JSON.stringify(next));
-      }
+      persistUsers(next);
       return next;
     });
   }, []);
@@ -3217,9 +3285,7 @@ function MarketConnectApp() {
 
     setUsers(prev => {
       const next = prev.map(item => item.id === user.id ? approvedUser : item);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('mc_users', JSON.stringify(next));
-      }
+      persistUsers(next);
       return next;
     });
 
@@ -3250,11 +3316,9 @@ function MarketConnectApp() {
 
       setUsers(prev => {
         const next = prev.map(item => item.id === user.id ? approvedUser : item);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('mc_users', JSON.stringify(next));
-          if (currentUser?.id === user.id) {
-            localStorage.setItem('mc_currentUser', JSON.stringify(approvedUser));
-          }
+        persistUsers(next);
+        if (currentUser?.id === user.id) {
+          safeSetStorageJson('mc_currentUser', approvedUser);
         }
         return next;
       });
@@ -3584,6 +3648,10 @@ function MarketConnectApp() {
     );
   }
 
+  if (!currentUser && isPublicSellerRoute) {
+    return <SellerProfileRoute />;
+  }
+
   return (
     <MarketplaceShell
       currentUser={currentUser as UserType}
@@ -3597,6 +3665,7 @@ function MarketConnectApp() {
       filteredNotifications={filteredNotifications}
       groupedNotifications={groupedNotifications}
       activeTab={activeTab}
+      isPublicSellerView={false}
       onNavigate={navigateTo}
       onOpenNotifications={() => { setShowNotificationsPage(true); }}
       onToggleNotificationsMenu={() => { setShowNotificationMenu(prev => !prev); setShowNotificationsPage(false); }}
