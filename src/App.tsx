@@ -1181,7 +1181,9 @@ function MarketConnectApp() {
     setShowChat(true);
     setNewMessage('');
     setChatImage(null);
-    navigateTo('messages');
+    if (location.pathname !== '/messages') {
+      navigateTo('messages');
+    }
 
     // mark as read locally
     markChatAsRead(chatId);
@@ -1210,7 +1212,7 @@ function MarketConnectApp() {
       .finally(() => {
         if (loadVersion === chatLoadVersionRef.current) setChatSyncing(false);
       });
-  }, [currentUser, messages, navigateTo]);
+  }, [currentUser, messages, navigateTo, location.pathname]);
 
   useEffect(() => {
     if (!activeChat || !currentUser) return;
