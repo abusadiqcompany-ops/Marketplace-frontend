@@ -77,6 +77,8 @@ const CATEGORIES = [
   'Electronics',
   'Phones & Accessories',
   'Fashion',
+   'Clothes',
+   'Jewellery',
   'Furniture',
   'Vehicles',
   'Food & Drinks',
