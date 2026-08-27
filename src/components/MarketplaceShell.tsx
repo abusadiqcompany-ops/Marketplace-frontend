@@ -1,5 +1,5 @@
-import React from 'react';
-import { Home, MessageCircle, User, ShoppingBag, Shield, Plus, Bell, BellRing, Inbox, Wallet, CreditCard, LogOut, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Home, MessageCircle, User, ShoppingBag, Shield, Plus, Bell, BellRing, Inbox, Wallet, CreditCard, LogOut, Sparkles, Menu, X } from 'lucide-react';
 import { NotificationCard } from './NotificationCard';
 import type { AppNotification, NotificationCategory, Role, User as UserType, Listing, Message, Order, Review, Report, AccountDeletionRequest, Transaction, PortalNotification } from '../types';
 
@@ -57,39 +57,46 @@ export function MarketplaceShell({
   children,
 }: MarketplaceShellProps) {
   const currentUserSafe = currentUser ?? { id: 'guest', name: 'Guest', email: '', role: 'buyer' as Role, avatar: 'https://i.pravatar.cc/150?img=11', walletBalance: 0 };
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigationItems = [
+    { id: 'discover', label: 'Discover', icon: Home },
+    { id: 'messages', label: 'Messages', icon: MessageCircle, badge: unreadMessages > 0 ? unreadMessages : undefined },
+    { id: 'activity', label: 'Activity', icon: ShoppingBag },
+    { id: 'transactions', label: 'Transactions', icon: CreditCard },
+    { id: 'wallet', label: 'Wallet', icon: Wallet },
+    { id: 'profile', label: 'Profile', icon: User },
+    ...(currentUserSafe.role === 'admin' ? [{ id: 'admin', label: 'Admin', icon: Shield, badge: undefined }] : []),
+  ];
+
+  const handleMobileNavigate = (tab: string) => {
+    setMobileMenuOpen(false);
+    onNavigate(tab);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <nav className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <div className="w-9 h-9 bg-slate-900 rounded-2xl flex items-center justify-center">
               <ShoppingBag className="w-5 h-5 text-white" />
             </div>
             <div>
-              <div className="font-semibold tracking-tight text-2xl">MarketConnect</div>
+              <div className="truncate text-xl font-semibold tracking-tight sm:text-2xl">MarketConnect</div>
               <div className="text-[10px] text-slate-400 -mt-1">Local Marketplace</div>
             </div>
           </div>
 
           {!isPublicSellerView && (
-            <div className="hidden md:flex items-center gap-2 bg-slate-100 rounded-3xl p-1 text-sm">
-              {[
-                { id: 'discover', label: 'Discover', icon: Home },
-                { id: 'messages', label: 'Messages', icon: MessageCircle, badge: unreadMessages > 0 ? unreadMessages : undefined },
-                { id: 'activity', label: 'Activity', icon: ShoppingBag },
-                { id: 'transactions', label: 'Transactions', icon: CreditCard },
-                { id: 'wallet', label: 'Wallet ', icon: Wallet },
-                { id: 'profile', label: 'Profile', icon: User },
-                ...(currentUserSafe.role === 'admin' ? [{ id: 'admin', label: 'Admin', icon: Shield, badge: undefined }] : [])
-              ].map((tab) => {
+            <div className="hidden items-center gap-2 rounded-3xl bg-slate-100 p-1 text-sm md:flex">
+              {navigationItems.map((tab) => {
                 const Icon = tab.icon;
                 const badgeNum = 'badge' in tab ? tab.badge : undefined;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => onNavigate(tab.id as any)}
-                    className={`px-5 py-2.5 rounded-3xl flex items-center gap-2 transition ${activeTab === tab.id ? 'bg-white shadow font-medium' : 'hover:bg-white/70'}`}
+                    className={`rounded-3xl px-3 py-2.5 lg:px-5 ${activeTab === tab.id ? 'bg-white shadow font-medium' : 'hover:bg-white/70'} flex items-center gap-2 transition`}
                   >
                     <Icon className="w-4 h-4" /> {tab.label}
                     {badgeNum && badgeNum > 0 && <span className="px-1.5 py-px bg-red-500 text-white text-[9px] rounded-full">{badgeNum}</span>}
@@ -100,8 +107,8 @@ export function MarketplaceShell({
           )}
 
           {!isPublicSellerView && (
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-3 pl-4 border-l">
+            <div className="flex shrink-0 items-center gap-1 sm:gap-4">
+              <div className="flex items-center gap-1 border-l pl-1 sm:gap-3 sm:pl-4">
                 <div className="relative">
                   <button
                     type="button"
@@ -150,21 +157,51 @@ export function MarketplaceShell({
                     </div>
                   )}
                 </div>
-                <div onClick={onOpenProfile} className="flex items-center gap-2 cursor-pointer">
+                <div onClick={onOpenProfile} className="flex cursor-pointer items-center gap-2">
                   <img src={currentUserSafe.avatar} alt="" className="w-9 h-9 rounded-2xl object-cover ring-2 ring-white" />
                   <div className="hidden md:block text-sm">
                     <div className="font-medium leading-none">{currentUserSafe.name}</div>
                     <div className="text-[10px] text-emerald-600 capitalize">{currentUserSafe.role}</div>
                   </div>
                 </div>
-                <button onClick={onLogout} className="p-2 text-slate-500 hover:text-red-500 transition"><LogOut className="w-4 h-4" /></button>
+                <button onClick={onLogout} className="p-2 text-slate-500 transition hover:text-red-500" aria-label="Log out"><LogOut className="h-4 w-4" /></button>
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(prev => !prev)}
+                  className="inline-flex items-center justify-center rounded-2xl border border-slate-200 p-2 text-slate-600 md:hidden"
+                  aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                  aria-expanded={mobileMenuOpen}
+                >
+                  {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </button>
               </div>
             </div>
           )}
         </div>
+        {!isPublicSellerView && mobileMenuOpen && (
+          <div className="border-t border-slate-200 bg-white px-4 py-3 shadow-lg md:hidden">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {navigationItems.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => handleMobileNavigate(tab.id)}
+                    className={`flex min-h-11 items-center gap-2 rounded-2xl px-3 py-3 text-left text-sm ${activeTab === tab.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{tab.label}</span>
+                    {tab.badge ? <span className="ml-auto rounded-full bg-rose-500 px-1.5 py-px text-[10px] text-white">{tab.badge}</span> : null}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </nav>
 
-      <div className="pt-20 max-w-7xl mx-auto px-6 pb-12">
+      <div className="mx-auto max-w-7xl overflow-x-hidden px-4 pb-12 pt-20 sm:px-6">
         {showNotificationsPage ? (
           <div className="mt-6 rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

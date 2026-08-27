@@ -57,19 +57,19 @@ export function AuthPage({
   onCancel,
 }: AuthPageProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-950 text-white flex items-center justify-center px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-950 px-3 py-6 text-white sm:px-4 sm:py-12">
       <div className="w-full max-w-2xl">
-        <div className="mb-10 text-center">
+        <div className="mb-6 text-center sm:mb-10">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-white/95 text-slate-950 mx-auto mb-4 shadow-lg shadow-emerald-900/20">
             <ShoppingBag className="h-8 w-8" />
           </div>
-          <h1 className="text-5xl font-semibold tracking-tight">MarketConnect</h1>
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">MarketConnect</h1>
         </div>
 
-        <div className="rounded-[32px] bg-white p-8 shadow-2xl text-slate-950">
-          <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="rounded-[32px] bg-white p-5 text-slate-950 shadow-2xl sm:p-8">
+          <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div>
-              <h2 className="text-3xl font-semibold tracking-tight">{authMode === 'login' ? 'Welcome Back' : 'Join MarketConnect'}</h2>
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{authMode === 'login' ? 'Welcome Back' : 'Join MarketConnect'}</h2>
               <p className="mt-2 text-sm text-slate-500">{authMode === 'login' ? 'Enter your credentials to continue' : 'Create a new account to start selling and buying'}</p>
             </div>
             <button

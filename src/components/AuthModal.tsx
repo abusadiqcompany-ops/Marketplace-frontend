@@ -55,8 +55,8 @@ export function AuthModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md text-slate-950 p-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 sm:p-4">
+      <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-5 text-slate-950 sm:max-h-[calc(100dvh-2rem)] sm:p-8">
         <div className="mb-6 flex items-center justify-between gap-3">
           <h2 className="text-3xl font-semibold tracking-tight">{authMode === 'login' ? 'Welcome Back' : 'Join MarketConnect'}</h2>
           <button type="button" onClick={() => onSwitchMode(authMode === 'login' ? 'register' : 'login')} className="text-sm font-medium text-slate-500 hover:text-slate-900">

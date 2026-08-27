@@ -90,12 +90,12 @@ export function NewListingRoute({
 
   return (
     <div className="pt-20 sm:pt-24 pb-40 sm:pb-32 min-h-screen bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="mx-auto max-w-7xl px-3 sm:px-6">
         <div className="sticky top-16 sm:top-20 z-30 bg-slate-50/95 backdrop-blur-sm pt-4 sm:pt-6 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
             <div>
               <button type="button" onClick={() => navigate(-1)} className="text-sm text-slate-500 hover:text-slate-900">← Back</button>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight">{editingListing ? 'Edit listing' : 'Create new listing'}</h1>
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{editingListing ? 'Edit listing' : 'Create new listing'}</h1>
               <p className="mt-2 text-slate-500 max-w-2xl">Build a standout listing with clear details, category, location and image previews.</p>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
@@ -106,7 +106,7 @@ export function NewListingRoute({
 
         <form id="listing-form" onSubmit={handleSubmit} className="flex flex-col gap-6 pb-24 sm:pb-0 lg:grid lg:grid-cols-[1.45fr_0.95fr]">
           <div className="space-y-6">
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
               <div className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400 mb-4">Listing details</div>
               <div className="space-y-4">
                 <div>
@@ -207,7 +207,7 @@ export function NewListingRoute({
               {listingValidationErrors.condition && <p className="mt-3 text-sm text-red-600">{listingValidationErrors.condition}</p>}
             </section>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                 <div>
                   <div className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">Images</div>
@@ -237,7 +237,7 @@ export function NewListingRoute({
                     setIsDraggingOver(false);
                   }
                 }}
-                className={`rounded-3xl border border-dashed p-8 text-center transition focus:outline-none focus:ring-2 focus:ring-emerald-500/30 ${isDraggingOver ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300 bg-slate-50 hover:border-emerald-400 hover:bg-white'}`}
+                className={`rounded-3xl border border-dashed p-5 text-center transition focus:outline-none focus:ring-2 focus:ring-emerald-500/30 sm:p-8 ${isDraggingOver ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300 bg-slate-50 hover:border-emerald-400 hover:bg-white'}`}
               >
                 <label
                   htmlFor="listingImages"
@@ -275,7 +275,7 @@ export function NewListingRoute({
           </div>
 
           <aside className="space-y-6 order-first lg:order-none">
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
               <div className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400 mb-4">Listing preview</div>
               <div className="rounded-3xl overflow-hidden bg-slate-100">
                 {listingForm.images.length > 0 ? (
@@ -295,7 +295,7 @@ export function NewListingRoute({
                 <p className="text-sm leading-6 text-slate-600">{listingForm.description || 'A quick summary of your listing will show here while you build it.'}</p>
               </div>
             </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
               <div className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400 mb-4">Seller summary</div>
               <div className="space-y-3 text-sm text-slate-600">
                 <div><span className="font-semibold text-slate-900">Seller</span>: {currentUser?.name || 'You'}</div>

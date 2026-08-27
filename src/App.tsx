@@ -2183,13 +2183,13 @@ function MarketConnectApp() {
     const seller = users.find(user => user.id === listing.sellerId);
 
     return (
-      <div className="pt-24 max-w-6xl mx-auto px-6 pb-12">
+      <div className="mx-auto max-w-6xl px-4 pb-12 pt-24 sm:px-6">
         <button onClick={() => navigate(-1)} className="mb-8 text-sm text-slate-500 hover:text-slate-900">← Back</button>
         <div className="bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-200">
           <div className="relative h-72 bg-slate-100 overflow-hidden">
             <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover" />
           </div>
-          <div className="p-8 grid gap-10 lg:grid-cols-[1.3fr_0.7fr]">
+          <div className="grid gap-8 p-4 sm:p-8 lg:grid-cols-[1.3fr_0.7fr] lg:gap-10">
             <div>
               <div className="text-4xl font-semibold tracking-tight">{listing.title}</div>
               <div className="mt-3 flex flex-wrap gap-3 text-sm text-slate-500">
@@ -2219,7 +2219,7 @@ function MarketConnectApp() {
             <div className="space-y-4">
               <div className="rounded-3xl border border-slate-200 p-6">
                 <div className="text-sm uppercase tracking-[0.24em] text-slate-400 mb-4">Price</div>
-                <div className="text-5xl font-semibold text-slate-900">₦{listing.price.toLocaleString()}</div>
+                <div className="text-4xl font-semibold text-slate-900 sm:text-5xl">₦{listing.price.toLocaleString()}</div>
               </div>
               <div className="grid gap-3">
                 <button onClick={() => placeOrder(listing)} className="w-full py-4 rounded-3xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">Buy Now</button>
@@ -2273,9 +2273,9 @@ function MarketConnectApp() {
     const sellerContactEmail = seller.email || '';
 
     return (
-      <div className="pt-24 max-w-7xl mx-auto px-6 pb-12">
+      <div className="mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6">
         <button onClick={() => navigate(-1)} className="mb-8 text-sm text-slate-500 hover:text-slate-900">← Back</button>
-        <div className="rounded-3xl bg-white border border-slate-200 shadow-sm p-8 mb-10">
+        <div className="mb-10 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="flex items-center gap-5">
               <img src={seller.avatar} alt={seller.name} className="w-24 h-24 rounded-3xl object-cover" />
@@ -3758,7 +3758,7 @@ function MarketConnectApp() {
           <>
             <div className="flex flex-col md:flex-row md:items-end gap-6 pt-8 pb-6">
               <div>
-                <div className="text-6xl font-semibold tracking-[-1.5px]">Discover amazing<br />local finds.</div>
+                <div className="text-4xl font-semibold tracking-[-1.5px] sm:text-6xl">Discover amazing<br />local finds.</div>
                 <p className="text-xl text-slate-600 mt-3">Connect directly with sellers in your area.</p>
               </div>
               <div className="md:ml-auto flex-1 max-w-lg">
@@ -3828,8 +3828,8 @@ function MarketConnectApp() {
 
         {/* ACTIVITY TAB */}
         {activeTab === 'activity' && (
-          <div className="pt-8 max-w-5xl">
-            <div className="text-5xl font-semibold tracking-tight mb-8">My Activity</div>
+          <div className="max-w-5xl pt-8">
+            <div className="mb-8 text-3xl font-semibold tracking-tight sm:text-5xl">My Activity</div>
 
             {authInitialized && currentUserSafe.verificationRequestStatus === 'pending' && !currentUserSafe.verified && Number(currentUserSafe.verificationFee) > 0 && (
               <div className="mb-8 rounded-3xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
@@ -3964,10 +3964,10 @@ function MarketConnectApp() {
 
         {/* TRANSACTIONS TAB */}
         {activeTab === 'transactions' && (
-          <div className="pt-8 max-w-7xl">
+          <div className="max-w-7xl pt-8">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
               <div>
-                <div className="text-5xl font-semibold tracking-tight">Transactions</div>
+                <div className="text-3xl font-semibold tracking-tight sm:text-5xl">Transactions</div>
                 <p className="text-slate-600 mt-1">Review your wallet history, filter records and export CSV.</p>
               </div>
               <button onClick={() => exportTransactionsCsv()} className="inline-flex items-center gap-2 py-3 px-5 bg-slate-900 text-white rounded-3xl text-sm">
@@ -4024,7 +4024,7 @@ function MarketConnectApp() {
           {/* WALLET TAB */}
           {activeTab === 'wallet' && (
             <div className="pt-8 max-w-3xl">
-              <div className="text-5xl font-semibold tracking-tight mb-3">Wallet</div>
+              <div className="mb-3 text-3xl font-semibold tracking-tight sm:text-5xl">Wallet</div>
               <div className="text-slate-500 mb-6">Manage your wallet balance, deposit and withdraw funds, and view history.</div>
               {depositSuccess && (
                 <div className="mb-6 rounded-[24px] border border-emerald-200 bg-emerald-50 p-4 text-emerald-900 shadow-sm">
@@ -4041,11 +4041,11 @@ function MarketConnectApp() {
                 </div>
               )}
 
-              <div className="rounded-[28px] bg-gradient-to-br from-slate-900 via-[#0f172a] to-[#020617] p-8 mb-8 shadow-[0_24px_60px_rgba(15,23,42,0.16)] text-white">
+              <div className="mb-8 rounded-[28px] bg-gradient-to-br from-slate-900 via-[#0f172a] to-[#020617] p-5 text-white shadow-[0_24px_60px_rgba(15,23,42,0.16)] sm:p-8">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="text-sm uppercase tracking-[0.3em] text-slate-300">Available Balance</div>
-                    <div className="mt-4 text-6xl font-semibold tracking-tight">{showBalance ? `₦${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : '••••••'}</div>
+                    <div className="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">{showBalance ? `₦${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : '••••••'}</div>
                     <div className="mt-2 text-sm text-slate-400">Spendable funds ready for deposits, withdrawals, and purchases.</div>
                   </div>
                   <button
@@ -4192,7 +4192,7 @@ function MarketConnectApp() {
         {/* PROFILE TAB */}
         {activeTab === 'profile' && (
           <div className="max-w-3xl pt-8">
-            <div className="text-5xl font-semibold tracking-tight mb-9">Profile</div>
+            <div className="mb-9 text-3xl font-semibold tracking-tight sm:text-5xl">Profile</div>
 
             {!currentUser ? (
               <div className="bg-white border rounded-3xl p-8 text-center">
@@ -4208,7 +4208,7 @@ function MarketConnectApp() {
                 </button>
               </div>
             ) : (
-              <div className="bg-white border rounded-3xl p-8">
+              <div className="rounded-3xl border bg-white p-4 sm:p-8">
                 <div className="flex flex-col md:flex-row gap-8 items-center mb-9">
                   <div className="relative">
                     <img src={profilePhoto || currentUserSafe.avatar} alt="" className="w-24 h-24 rounded-3xl ring-4 ring-slate-100 object-cover" />
@@ -4364,14 +4364,14 @@ function MarketConnectApp() {
         {activeTab === 'admin' && currentUserSafe.role === 'admin' && (
           <div className="pt-8">
             <div className="flex justify-between mb-8">
-              <div className="text-5xl font-semibold tracking-tight">Admin Dashboard</div>
+              <div className="text-3xl font-semibold tracking-tight sm:text-5xl">Admin Dashboard</div>
               <div className="text-right text-xs text-slate-500">Platform Overview</div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 mb-10">
-              <div className="bg-white border p-6 rounded-3xl"><div className="text-emerald-600 text-sm">USERS</div><div className="font-semibold text-6xl">{users.length}</div></div>
-              <div className="bg-white border p-6 rounded-3xl"><div className="text-emerald-600 text-sm">LISTINGS</div><div className="font-semibold text-6xl">{listings.length}</div></div>
-              <div className="bg-white border p-6 rounded-3xl"><div className="text-emerald-600 text-sm">ORDERS</div><div className="font-semibold text-6xl">{orders.length}</div></div>
+            <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="rounded-3xl border bg-white p-4 sm:p-6"><div className="text-sm text-emerald-600">USERS</div><div className="text-4xl font-semibold sm:text-6xl">{users.length}</div></div>
+              <div className="rounded-3xl border bg-white p-4 sm:p-6"><div className="text-sm text-emerald-600">LISTINGS</div><div className="text-4xl font-semibold sm:text-6xl">{listings.length}</div></div>
+              <div className="rounded-3xl border bg-white p-4 sm:p-6"><div className="text-sm text-emerald-600">ORDERS</div><div className="text-4xl font-semibold sm:text-6xl">{orders.length}</div></div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
               <div className="bg-white border p-6 rounded-3xl"><div className="text-emerald-600 text-sm">TOTAL DEPOSITS</div><div className="font-semibold text-4xl mt-2">₦{adminRevenue.deposits.toLocaleString()}</div></div>

@@ -368,7 +368,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 mt-6">
           {/* Profile form */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
+          <div className="rounded-2xl bg-white p-4 shadow-sm sm:p-6">
             <h3 className="text-lg font-semibold mb-4">{isSeller ? 'Store Information' : 'Personal Information'}</h3>
             <div className="space-y-4">
               {isSeller ? (
@@ -397,9 +397,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
               )}
               <div>
                 <label htmlFor="phone" className="text-sm text-slate-600">Phone</label>
-                <div className="mt-2 flex">
-                  <span className="inline-flex items-center px-3 rounded-l-lg bg-[#fafafa] border border-r-0 border-[#e8e8e8]">🇳🇬 +234</span>
-                  <input id="phone" name="phone" value={profile.phone || ''} onChange={e => onFieldChange('phone', e.target.value)} className="flex-1 p-3 rounded-r-lg bg-[#fafafa] border border-[#e8e8e8]" />
+                <div className="mt-2 flex min-w-0">
+                  <span className="inline-flex shrink-0 items-center rounded-l-lg border border-r-0 border-[#e8e8e8] bg-[#fafafa] px-2 text-sm sm:px-3">🇳🇬 +234</span>
+                  <input id="phone" name="phone" value={profile.phone || ''} onChange={e => onFieldChange('phone', e.target.value)} className="min-w-0 flex-1 rounded-r-lg border border-[#e8e8e8] bg-[#fafafa] p-3" />
                 </div>
               </div>
               <div>
@@ -415,7 +415,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
                 </button>
               </div>
 
-              <div className="flex gap-3 mt-3">
+              <div className="flex flex-col gap-3 mt-3 sm:flex-row">
                 <button type="button" onClick={() => setShowPasswordModal(true)} className="flex-1 p-3 rounded-lg border border-slate-300">Change Password</button>
                 <button type="button" onClick={() => setShowDeleteModal(true)} className="flex-1 p-3 rounded-lg border border-rose-300 text-rose-600">Delete Account</button>
               </div>
@@ -504,7 +504,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
 
       {showDeleteModal && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-5 shadow-xl sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="text-lg font-semibold">Request Account Deletion</div>
               <button type="button" onClick={() => { setShowDeleteModal(false); setDeleteReason(''); }} className="text-slate-500">✕</button>
@@ -558,7 +558,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
 
       {showPasswordModal && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-5 shadow-xl sm:p-6">
             <div className="flex items-center justify-between mb-5">
               <div className="text-lg font-semibold">Change Password</div>
               <button type="button" onClick={() => setShowPasswordModal(false)} className="text-slate-500">✕</button>
