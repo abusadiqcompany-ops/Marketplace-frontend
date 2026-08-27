@@ -348,6 +348,8 @@ function MarketConnectApp() {
       return {};
     }
   });
+  const sellerRouteDataRef = useRef<any>(null);
+  const sellerProfileRouteRef = useRef<React.FC | null>(null);
 
   const navigateTo = (tab: string) => {
     const path = tab === 'discover' ? '/' : `/${tab}`;
@@ -2233,7 +2235,22 @@ function MarketConnectApp() {
     );
   };
 
-  const SellerProfileRoute = () => {
+  if (!sellerProfileRouteRef.current) {
+    sellerProfileRouteRef.current = () => {
+    const routeData = sellerRouteDataRef.current as {
+      users: UserType[];
+      listings: Listing[];
+      sellerStatsCache: Record<string, { activeListings: number; averageRating: number; totalReviews: number; salesDone: number }>;
+      setSellerStatsCache: React.Dispatch<React.SetStateAction<Record<string, { activeListings: number; averageRating: number; totalReviews: number; salesDone: number }>>>;
+      currentUser: UserType | null;
+      contactSeller: (listing: Listing) => void;
+      setReportForm: React.Dispatch<React.SetStateAction<any>>;
+      setShowReportModal: React.Dispatch<React.SetStateAction<boolean>>;
+      getVerificationStatus: (user?: Partial<UserType> | null) => { pillClass: string; label: string };
+      normalizeListingLocation: (location: any) => string;
+      LOGIN_PATH: string;
+    };
+    const { users, listings, sellerStatsCache, setSellerStatsCache, currentUser, contactSeller, setReportForm, setShowReportModal, getVerificationStatus, normalizeListingLocation, LOGIN_PATH } = routeData;
     const { id } = useParams();
     const seller = users.find(user => user.id === id && user.role === 'seller');
     const defaultSellerStats = { activeListings: 0, averageRating: 0, totalReviews: 0, salesDone: 0 };
@@ -2366,7 +2383,9 @@ function MarketConnectApp() {
         </div>
       </div>
     );
-  };
+    };
+  }
+  const SellerProfileRoute = sellerProfileRouteRef.current;
 
   // Seller: Accept / Reject Order
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
@@ -3611,6 +3630,20 @@ function MarketConnectApp() {
         </div>
       </div>
     );
+  };
+
+  sellerRouteDataRef.current = {
+    users,
+    listings,
+    sellerStatsCache,
+    setSellerStatsCache,
+    currentUser,
+    contactSeller,
+    setReportForm,
+    setShowReportModal,
+    getVerificationStatus,
+    normalizeListingLocation,
+    LOGIN_PATH,
   };
 
   // Main Render
