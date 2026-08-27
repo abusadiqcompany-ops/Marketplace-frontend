@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getProfile, updateProfile, getProfileStats, uploadProfileAvatar, createAccountDeletionRequest, changePassword } from '../api/client';
 import { User } from '../types';
-import { Copy, Plus, Share2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 interface ProfilePageProps {
   currentUser?: User | null;
@@ -73,7 +73,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' });
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [sellerLinkCopied, setSellerLinkCopied] = useState(false);
 
   useEffect(() => {
     const fallbackProfile = buildFallbackProfile(currentUser);
@@ -270,35 +269,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
     await uploadAvatarFile(pendingAvatarFile);
   };
 
-  const sellerProfileLink = typeof window !== 'undefined'
-    ? `${window.location.origin}/seller/${encodeURIComponent(profile?.id || '')}`
-    : '';
-
-  const copySellerProfileLink = async () => {
-    if (!sellerProfileLink) return;
-    try {
-      await navigator.clipboard.writeText(sellerProfileLink);
-      setSellerLinkCopied(true);
-      window.setTimeout(() => setSellerLinkCopied(false), 2200);
-    } catch {
-      setSavedMessage('Unable to copy the seller link. Please copy it from the address bar.');
-      window.setTimeout(() => setSavedMessage(''), 3000);
-    }
-  };
-
-  const shareSellerProfileLink = async () => {
-    if (!sellerProfileLink) return;
-    if (navigator.share) {
-      await navigator.share({
-        title: `${profile.businessName || profile.name} on MarketConnect`,
-        text: `View ${profile.businessName || profile.name}'s seller profile on MarketConnect.`,
-        url: sellerProfileLink,
-      });
-      return;
-    }
-    await copySellerProfileLink();
-  };
-
   if (loading && !profile) return <div className="pt-24 px-6">Loading profile...</div>;
   if (!profile) return <div className="pt-24 px-6">Unable to load profile. Please sign in again.</div>;
 
@@ -436,46 +406,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
                     <div className="mt-3 text-sm text-slate-600">Phone: {profile.phone || 'Not provided'}</div>
                     <div className="text-sm text-slate-600">State: {formatLocationValue(profile.location) || 'Not provided'}</div>
                   </>
-                )}
-                {isSeller && (
-                  <div className="mt-4 border-t border-slate-100 pt-4">
-                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">View seller profile link</div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <input
-                        readOnly
-                        aria-label="View seller profile link"
-                        value={sellerProfileLink}
-                        className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => void copySellerProfileLink()}
-                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white transition hover:bg-slate-700"
-                        aria-label="Copy View seller profile link"
-                        title="Copy View seller profile link"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void shareSellerProfileLink()}
-                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white transition hover:bg-emerald-700"
-                        aria-label="Share seller profile link"
-                        title="Share seller profile link"
-                      >
-                        <Share2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <a
-                      href={sellerProfileLink}
-                      className="mt-3 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
-                    >
-                      View seller profile
-                    </a>
-                    <div className="mt-2 text-xs text-emerald-700" role="status" aria-live="polite">
-                      {sellerLinkCopied ? 'Link copied. Share it on WhatsApp, Facebook, or with friends.' : 'This link opens your public View seller profile page.'}
-                    </div>
-                  </div>
                 )}
               </div>
             </div>
