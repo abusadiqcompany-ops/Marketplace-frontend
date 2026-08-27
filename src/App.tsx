@@ -3556,7 +3556,7 @@ function MarketConnectApp() {
           <div className="flex items-start justify-between mb-2">
             <span className="px-3 py-1 text-[10px] font-semibold tracking-wider bg-slate-100 text-slate-600 rounded-full">{listing.category}</span>
             <div className="text-right">
-              <div className="font-semibold text-2xl text-slate-900 tabular-nums">₦{listing.price}</div>
+              <div className="font-semibold text-2xl text-slate-900 tabular-nums">₦{listing.price.toLocaleString()}</div>
             </div>
           </div>
           
@@ -3829,7 +3829,7 @@ function MarketConnectApp() {
           <div className="pt-8 max-w-5xl">
             <div className="text-5xl font-semibold tracking-tight mb-8">My Activity</div>
 
-            {currentUserSafe.verificationRequestStatus === 'pending' && !currentUserSafe.verified && (
+            {authInitialized && currentUserSafe.verificationRequestStatus === 'pending' && !currentUserSafe.verified && Number(currentUserSafe.verificationFee) > 0 && (
               <div className="mb-8 rounded-3xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
                 <div className="font-semibold">Verification request from admin</div>
                 <p className="mt-1 text-sm">Admin has requested your verification. Pay ₦{currentUserSafe.verificationFee || verificationAmount} from your wallet to activate your verification badge.</p>
@@ -3992,7 +3992,7 @@ function MarketConnectApp() {
                   </div>
                   <div>
                     <div className="text-xs text-slate-500">Wallet balance</div>
-                    <div className="text-lg font-semibold">₦{currentUserSafe.walletBalance || 0}</div>
+                    <div className="text-lg font-semibold">₦{(currentUserSafe.walletBalance || 0).toLocaleString()}</div>
                   </div>
                 </div>
               </div>
@@ -4043,7 +4043,7 @@ function MarketConnectApp() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="text-sm uppercase tracking-[0.3em] text-slate-300">Available Balance</div>
-                    <div className="mt-4 text-6xl font-semibold tracking-tight">{showBalance ? `₦${walletBalance.toFixed(2)}` : '••••••'}</div>
+                    <div className="mt-4 text-6xl font-semibold tracking-tight">{showBalance ? `₦${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : '••••••'}</div>
                     <div className="mt-2 text-sm text-slate-400">Spendable funds ready for deposits, withdrawals, and purchases.</div>
                   </div>
                   <button
@@ -4734,7 +4734,7 @@ function MarketConnectApp() {
             <div className="text-sm text-center text-emerald-600 mb-6">Wallet Payment Only</div>
 
             <div className="space-y-3 mb-8">
-                <div className="text-sm text-center">Your wallet balance: <span className="font-semibold">₦{currentUserSafe.walletBalance || 0}</span></div>
+                <div className="text-sm text-center">Your wallet balance: <span className="font-semibold">₦{(currentUserSafe.walletBalance || 0).toLocaleString()}</span></div>
                 <div className="text-xs text-slate-500 text-center">This platform currently supports wallet payments only. Please deposit to your wallet to complete this purchase.</div>
             </div>
 
