@@ -59,6 +59,7 @@ export const MessagesPage = ({
   const recordingChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<number | null>(null);
   const playbackRef = useRef<HTMLAudioElement | null>(null);
+  const actionsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -272,6 +273,20 @@ export const MessagesPage = ({
     playbackRef.current?.pause();
   }, []);
 
+  useEffect(() => {
+    if (!showActions) return;
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (actionsRef.current && !actionsRef.current.contains(event.target as Node)) setShowActions(false);
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [showActions]);
+
+  const formatOrderReference = (orderId?: string) => {
+    if (!orderId) return '';
+    return orderId.startsWith('MC') ? orderId : `MC-${orderId.replace(/[^a-z0-9]/gi, '').slice(0, 6).toUpperCase()}`;
+  };
+
   return (
     <div className={`messages-page pt-4 w-full ${activeChat ? 'messages-page--active' : ''}`} tabIndex={0} ref={containerRef} onKeyDown={handleKeyDown}>
       {!activeChat && <div className="messages-list-heading px-4 pb-4">
@@ -388,7 +403,7 @@ export const MessagesPage = ({
                   </button>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-base font-semibold">{activeChat.otherUserName}</div>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Available to message</div>
+                    <div className="flex items-center gap-1.5 text-xs text-emerald-600"><span aria-hidden="true">●</span> Online</div>
                   </div>
                 </div>
               </div>
@@ -400,8 +415,8 @@ export const MessagesPage = ({
             {activeChat.orderId && activeChat.listingTitle && (
               <button type="button" onClick={() => onOpenOrder?.(activeChat.orderId!)} className="mx-4 mt-4 flex w-[calc(100%-2rem)] items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-left transition hover:border-emerald-300 hover:bg-emerald-50">
                 {activeChat.listingImage ? <img src={activeChat.listingImage} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" /> : <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-700"><Package className="h-5 w-5" /></span>}
-                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-slate-900">{activeChat.listingTitle}</span><span className="mt-0.5 block text-xs text-slate-500">Order #{activeChat.orderId} {activeChat.orderPrice !== undefined ? `· ₦${activeChat.orderPrice.toLocaleString()}` : ''}</span></span>
-                <span className="shrink-0 text-xs font-semibold text-emerald-700">View order</span>
+                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-slate-900">{activeChat.listingTitle}</span><span className="mt-0.5 block text-xs text-slate-500">{activeChat.orderPrice !== undefined ? `₦${activeChat.orderPrice.toLocaleString()} · ` : ''}Order #{formatOrderReference(activeChat.orderId)} · {activeChat.orderStatus || 'Pending'}</span></span>
+                <span className="shrink-0 text-xs font-semibold text-emerald-700">View order <span aria-hidden="true">→</span></span>
               </button>
             )}
             <div id="chat-scroll" className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
@@ -438,10 +453,10 @@ export const MessagesPage = ({
                   );
                 })
               ) : (
-                <div className="mx-auto flex max-w-xs flex-col items-center py-14 text-center"><span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700"><MessageCircle className="h-5 w-5" /></span><div className="font-semibold text-slate-800">No messages yet</div><div className="mt-1 text-sm text-slate-400">Say hello to start the conversation.</div></div>
+                <div className="flex min-h-full flex-1 flex-col items-center justify-center px-4 py-8 text-center"><span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700"><MessageCircle className="h-5 w-5" /></span><div className="font-semibold text-slate-800">No messages yet</div><div className="mt-1 text-sm text-slate-400">Say hello to start the conversation.</div></div>
               )}
             </div>
-            <div className="mx-4 mb-2 flex items-center gap-2 text-[11px] text-slate-400"><span>🔒</span> Keep payments and transactions inside MarketConnect.</div>
+            <div className="mx-4 mb-1 flex items-center gap-1.5 text-[10px] leading-4 text-slate-400"><span>🔒</span> Keep payments and transactions inside MarketConnect for your safety.</div>
             <div className="messages-conversation__composer shrink-0 border-t border-slate-100 bg-white px-4 py-4">
               <div className="flex flex-col gap-3">
                 {chatImage ? (
@@ -517,12 +532,12 @@ export const MessagesPage = ({
                   </div>
                 ) : null}
 
-                <div className="chat-composer relative flex items-center gap-2">
-                  {showActions && <div className="absolute bottom-14 left-0 z-10 w-52 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-                    <button type="button" onClick={() => setShowActions(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50"><ShoppingBag className="h-4 w-4 text-emerald-600" /> Send product <span className="ml-auto text-[10px] text-slate-400">Coming soon</span></button>
-                    <button type="button" onClick={() => { setShowActions(false); pickImage(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50"><ImagePlus className="h-4 w-4 text-emerald-600" /> Send image</button>
+                <div ref={actionsRef} className="chat-composer relative flex items-center gap-2">
+                  {showActions && <div className="absolute bottom-14 left-0 z-10 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+                    <button type="button" onClick={() => setShowActions(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50"><Package className="h-4 w-4 text-emerald-600" /> Send product <span className="ml-auto text-[10px] text-slate-400">Unavailable</span></button>
+                    <button type="button" onClick={() => { setShowActions(false); pickImage(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50"><ImagePlus className="h-4 w-4 text-emerald-600" /> Send photo</button>
                     <button type="button" onClick={() => setShowActions(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-500 hover:bg-slate-50"><MapPin className="h-4 w-4" /> Share location <span className="ml-auto text-[10px] text-slate-400">Unavailable</span></button>
-                    <button type="button" onClick={() => setShowActions(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-500 hover:bg-slate-50"><Package className="h-4 w-4" /> Send order <span className="ml-auto text-[10px] text-slate-400">Unavailable</span></button>
+                    <button type="button" onClick={() => setShowActions(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-500 hover:bg-slate-50"><Paperclip className="h-4 w-4" /> Send order <span className="ml-auto text-[10px] text-slate-400">Unavailable</span></button>
                     <button type="button" onClick={() => { setShowActions(false); pickImage(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50"><Paperclip className="h-4 w-4 text-emerald-600" /> Attach file</button>
                   </div>}
                   <button type="button" onClick={() => setShowActions(value => !value)} className="chat-composer__action inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50" aria-label="More attachment options" title="Add attachment"><Plus className="h-5 w-5" /></button>
