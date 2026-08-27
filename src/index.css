@@ -57,10 +57,16 @@ button, input, select, textarea {
 
 @media (max-width: 767px) {
   .messages-page--active {
-    margin: -1rem -1.5rem -3rem;
-    width: auto;
+    position: fixed;
+    top: 5rem;
+    right: 0;
+    bottom: 4rem;
+    left: 0;
+    z-index: 30;
+    margin: 0;
+    width: 100vw;
     padding-top: 0;
-    height: calc(100dvh - 9rem);
+    height: auto;
     overflow: hidden;
   }
 
@@ -78,8 +84,17 @@ button, input, select, textarea {
   }
 
   .messages-page--active .messages-conversation > #chat-scroll {
+    flex: 1 1 0%;
     min-height: 0;
     overscroll-behavior: contain;
+  }
+
+  .messages-conversation__header {
+    min-height: 4.5rem;
+  }
+
+  .messages-conversation__composer {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
   }
 
   .chat-bubble {

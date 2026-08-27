@@ -330,8 +330,8 @@ export const MessagesPage = ({
                       </div>
                     )}
                   </button>
-                  <div className="min-w-0">
-                    <div className="max-w-[55vw] truncate text-base font-semibold">{activeChat.otherUserName}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-base font-semibold">{activeChat.otherUserName}</div>
                     {activeChat.listingTitle && <div className="text-sm text-slate-500 truncate">{activeChat.listingTitle}</div>}
                   </div>
                 </div>
