@@ -307,8 +307,8 @@ export const MessagesPage = ({
 
         {activeChat ? (
           <div className="messages-conversation bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col overflow-hidden min-h-[calc(100vh-180px)]">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
+            <div className="messages-conversation__header shrink-0 px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <button
                   type="button"
                   onClick={onCloseConversation}
@@ -316,7 +316,7 @@ export const MessagesPage = ({
                 >
                   ←
                 </button>
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <button
                     type="button"
                     onClick={onOpenChatUserProfile}
@@ -330,13 +330,13 @@ export const MessagesPage = ({
                       </div>
                     )}
                   </button>
-                  <div>
-                    <div className="text-base font-semibold">{activeChat.otherUserName}</div>
+                  <div className="min-w-0">
+                    <div className="max-w-[55vw] truncate text-base font-semibold">{activeChat.otherUserName}</div>
                     {activeChat.listingTitle && <div className="text-sm text-slate-500 truncate">{activeChat.listingTitle}</div>}
                   </div>
                 </div>
               </div>
-              <div className="text-xs text-slate-400">{activeChat.chatId ? formatTimestamp(messages.find(m => m.chatId === activeChat.chatId)?.timestamp || undefined) : ''}</div>
+              <div className="shrink-0 text-xs text-slate-400">{activeChat.chatId ? formatTimestamp(messages.find(m => m.chatId === activeChat.chatId)?.timestamp || undefined) : ''}</div>
             </div>
             <div id="chat-scroll" className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
               {chatMessages.length > 0 ? (
@@ -371,7 +371,7 @@ export const MessagesPage = ({
                 <div className="text-center text-slate-400 py-14">No messages yet. Say hello to start the conversation.</div>
               )}
             </div>
-            <div className="border-t border-slate-100 px-4 py-4">
+            <div className="messages-conversation__composer shrink-0 border-t border-slate-100 bg-white px-4 py-4">
               <div className="flex flex-col gap-3">
                 {chatImage ? (
                   <div className="rounded-3xl border border-slate-200 bg-slate-50 p-3 flex items-center justify-between gap-3">

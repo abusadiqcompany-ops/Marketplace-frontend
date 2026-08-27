@@ -60,6 +60,8 @@ button, input, select, textarea {
     margin: -1rem -1.5rem -3rem;
     width: auto;
     padding-top: 0;
+    height: calc(100dvh - 9rem);
+    overflow: hidden;
   }
 
   .messages-page--active .grid {
@@ -67,8 +69,8 @@ button, input, select, textarea {
   }
 
   .messages-page--active .messages-conversation {
-    height: calc(100dvh - 5rem);
-    min-height: calc(100dvh - 5rem);
+    height: 100%;
+    min-height: 0;
     border-right: 0;
     border-left: 0;
     border-radius: 0;
@@ -77,6 +79,7 @@ button, input, select, textarea {
 
   .messages-page--active .messages-conversation > #chat-scroll {
     min-height: 0;
+    overscroll-behavior: contain;
   }
 
   .chat-bubble {
