@@ -1316,9 +1316,10 @@ function MarketConnectApp() {
   }, [chatMessages]);
 
   // Send message - real conversation flow
-  const sendMessage = async () => {
-    const outgoingContent = newMessage.trim();
-    if ((!outgoingContent && !chatImage) || !activeChat || !currentUser || currentUser.role === 'admin') return;
+  const sendMessage = async (contentOverride?: string, imageOverride?: string | null) => {
+    const outgoingContent = (contentOverride ?? newMessage).trim();
+    const outgoingImage = imageOverride !== undefined ? imageOverride : chatImage;
+    if ((!outgoingContent && !outgoingImage) || !activeChat || !currentUser || currentUser.role === 'admin') return;
 
     const chatId = [currentUser.id, activeChat.otherUserId].sort().join('-') +
                    (activeChat.listingId ? `-${activeChat.listingId}` : '');
@@ -1329,7 +1330,7 @@ function MarketConnectApp() {
       senderId: currentUser.id,
       senderName: currentUser.name,
       content: outgoingContent,
-      image: chatImage ?? undefined,
+      image: outgoingImage ?? undefined,
       timestamp: new Date().toISOString()
     };
 
@@ -1352,7 +1353,7 @@ function MarketConnectApp() {
           senderId: currentUser.id,
           senderName: currentUser.name,
           content: outgoingContent,
-          image: chatImage,
+          image: outgoingImage,
           recipientId: activeChat.otherUserId,
           listingId: activeChat.listingId,
         }),

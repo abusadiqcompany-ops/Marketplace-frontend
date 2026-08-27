@@ -35,7 +35,7 @@ export const MessagesPage = ({
   onSelectChatImage: (value: string | null) => void;
   newMessage: string;
   onChangeMessage: (value: string) => void;
-  onSendMessage: () => void;
+  onSendMessage: (content?: string, image?: string | null) => void;
   onSendVoiceMessage: (audio: string) => void;
   onCloseConversation: () => void;
   onOpenChatUserProfile: () => void;
@@ -287,6 +287,33 @@ export const MessagesPage = ({
     return orderId.startsWith('MC') ? orderId : `MC-${orderId.replace(/[^a-z0-9]/gi, '').slice(0, 6).toUpperCase()}`;
   };
 
+  const sendProduct = () => {
+    if (!activeChat?.listingTitle) return;
+    const price = activeChat.orderPrice !== undefined ? `\nPrice: ₦${activeChat.orderPrice.toLocaleString()}` : '';
+    onSendMessage(`Product: ${activeChat.listingTitle}${price}`, activeChat.listingImage);
+    setShowActions(false);
+  };
+
+  const shareLocation = () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        onSendMessage(`My location: ${position.coords.latitude.toFixed(5)}, ${position.coords.longitude.toFixed(5)}`);
+        setShowActions(false);
+      },
+      () => setShowActions(false),
+      { enableHighAccuracy: false, timeout: 10000 }
+    );
+  };
+
+  const sendOrder = () => {
+    if (!activeChat?.orderId) return;
+    const status = activeChat.orderStatus || 'pending';
+    const price = activeChat.orderPrice !== undefined ? ` · ₦${activeChat.orderPrice.toLocaleString()}` : '';
+    onSendMessage(`Order #${formatOrderReference(activeChat.orderId)}: ${activeChat.listingTitle || 'Marketplace order'}${price} · ${status}`);
+    setShowActions(false);
+  };
+
   return (
     <div className={`messages-page pt-4 w-full ${activeChat ? 'messages-page--active' : ''}`} tabIndex={0} ref={containerRef} onKeyDown={handleKeyDown}>
       {!activeChat && <div className="messages-list-heading px-4 pb-4">
@@ -403,7 +430,7 @@ export const MessagesPage = ({
                   </button>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-base font-semibold">{activeChat.otherUserName}</div>
-                    <div className="flex items-center gap-1.5 text-xs text-emerald-600"><span aria-hidden="true">●</span> Online</div>
+                    <div className={`flex items-center gap-1.5 text-xs ${activeChatUser ? 'text-emerald-600' : 'text-slate-400'}`}><span aria-hidden="true">●</span> {activeChatUser ? 'Online' : 'Offline'}</div>
                   </div>
                 </div>
               </div>
@@ -534,10 +561,10 @@ export const MessagesPage = ({
 
                 <div ref={actionsRef} className="chat-composer relative flex items-center gap-2">
                   {showActions && <div className="absolute bottom-14 left-0 z-10 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-                    <button type="button" onClick={() => setShowActions(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50"><Package className="h-4 w-4 text-emerald-600" /> Send product <span className="ml-auto text-[10px] text-slate-400">Unavailable</span></button>
+                    <button type="button" onClick={sendProduct} disabled={!activeChat?.listingTitle} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"><Package className="h-4 w-4 text-emerald-600" /> Send product</button>
                     <button type="button" onClick={() => { setShowActions(false); pickImage(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50"><ImagePlus className="h-4 w-4 text-emerald-600" /> Send photo</button>
-                    <button type="button" onClick={() => setShowActions(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-500 hover:bg-slate-50"><MapPin className="h-4 w-4" /> Share location <span className="ml-auto text-[10px] text-slate-400">Unavailable</span></button>
-                    <button type="button" onClick={() => setShowActions(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-500 hover:bg-slate-50"><Paperclip className="h-4 w-4" /> Send order <span className="ml-auto text-[10px] text-slate-400">Unavailable</span></button>
+                    <button type="button" onClick={shareLocation} disabled={!navigator.geolocation} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"><MapPin className="h-4 w-4 text-emerald-600" /> Share location</button>
+                    <button type="button" onClick={sendOrder} disabled={!activeChat?.orderId} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"><Paperclip className="h-4 w-4 text-emerald-600" /> Send order</button>
                     <button type="button" onClick={() => { setShowActions(false); pickImage(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50"><Paperclip className="h-4 w-4 text-emerald-600" /> Attach file</button>
                   </div>}
                   <button type="button" onClick={() => setShowActions(value => !value)} className="chat-composer__action inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50" aria-label="More attachment options" title="Add attachment"><Plus className="h-5 w-5" /></button>
