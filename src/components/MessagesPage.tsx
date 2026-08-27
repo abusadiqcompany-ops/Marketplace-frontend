@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, ArrowRight, ImagePlus, Mic, MicOff, Pause, Play, Send, Trash2, CheckCheck } from 'lucide-react';
+import { User, ArrowRight, ImagePlus, Mic, MicOff, Pause, Play, Send, Trash2, CheckCheck, Search, MoreVertical, Plus, Package, MapPin, Paperclip, ShoppingBag, ChevronLeft, MessageCircle } from 'lucide-react';
 import type { User as UserType, Message } from '../types';
 
 export const MessagesPage = ({
@@ -23,13 +23,13 @@ export const MessagesPage = ({
   timestampTimeZone,
   onOpenConversation,
 }: {
-  conversations: { chatId?: string; otherUserId: string; otherUserName: string; listingId?: string; listingTitle?: string }[];
+  conversations: { chatId?: string; otherUserId: string; otherUserName: string; listingId?: string; listingTitle?: string; listingImage?: string; orderId?: string; orderPrice?: number; orderStatus?: string }[];
   users: UserType[];
   messages: Message[];
   currentUser: UserType | null;
   chatLastRead?: Record<string, string>;
   markChatAsRead?: (chatId?: string) => void;
-  activeChat?: { chatId?: string; otherUserId: string; otherUserName: string; listingId?: string; listingTitle?: string } | null;
+  activeChat?: { chatId?: string; otherUserId: string; otherUserName: string; listingId?: string; listingTitle?: string; listingImage?: string; orderId?: string; orderPrice?: number; orderStatus?: string } | null;
   chatMessages: Message[];
   chatImage?: string | null;
   onSelectChatImage: (value: string | null) => void;
@@ -42,8 +42,12 @@ export const MessagesPage = ({
   timestampLocale?: string;
   timestampTimeZone?: string;
   onOpenConversation: (conv: any) => void;
+  onOpenOrder?: (orderId: string) => void;
 }) => {
   const [selected, setSelected] = useState(0);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<'All' | 'Buyers' | 'Sellers' | 'Unread'>('All');
+  const [showActions, setShowActions] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingError, setRecordingError] = useState<string | null>(null);
   const [recordingAudio, setRecordingAudio] = useState<string | null>(null);
@@ -123,7 +127,7 @@ export const MessagesPage = ({
     if (!chatId) return null;
     const msgs = messages.filter(m => m.chatId === chatId);
     if (!msgs.length) return null;
-    const sorted = msgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    const sorted = [...msgs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
     const lastMessage = sorted[sorted.length - 1];
     if (!lastMessage) return null;
     if (lastMessage.content) return lastMessage.content;
@@ -131,6 +135,29 @@ export const MessagesPage = ({
     if (lastMessage.audio) return 'Voice message';
     return null;
   };
+
+  const getLastMessageRecord = (chatId?: string) => {
+    if (!chatId) return null;
+    return [...messages.filter(message => message.chatId === chatId)].sort((a, b) =>
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )[0] || null;
+  };
+
+  const getUnreadCount = (conv: typeof conversations[number]) => {
+    if (!conv.chatId) return 0;
+    const lastReadIso = chatLastRead?.[conv.chatId];
+    return messages.filter(message => message.chatId === conv.chatId && message.senderId !== currentUser?.id &&
+      new Date(message.timestamp).getTime() > new Date(lastReadIso || 0).getTime()).length;
+  };
+
+  const visibleConversations = conversations.filter(conv => {
+    const unread = getUnreadCount(conv) > 0;
+    const otherUser = users.find(user => user.id === conv.otherUserId);
+    const matchesSearch = `${conv.otherUserName} ${conv.listingTitle || ''}`.toLowerCase().includes(search.trim().toLowerCase());
+    const matchesFilter = filter === 'All' || (filter === 'Unread' && unread) ||
+      (filter === 'Buyers' && otherUser?.role === 'buyer') || (filter === 'Sellers' && otherUser?.role === 'seller');
+    return matchesSearch && matchesFilter;
+  });
 
   const activeChatUser = activeChat ? users.find(u => u.id === activeChat.otherUserId) : undefined;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -247,21 +274,46 @@ export const MessagesPage = ({
 
   return (
     <div className={`messages-page pt-4 w-full ${activeChat ? 'messages-page--active' : ''}`} tabIndex={0} ref={containerRef} onKeyDown={handleKeyDown}>
-      {!activeChat && <div className="px-4 pb-3">
-        <div className="text-3xl font-semibold">Messages</div>
+      {!activeChat && <div className="messages-list-heading px-4 pb-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-3xl font-semibold tracking-tight text-slate-950">Messages</div>
+            <div className="mt-1 text-sm text-slate-500">Your marketplace conversations</div>
+          </div>
+          <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm" aria-label="More message options" title="More options">
+            <MoreVertical className="h-5 w-5" />
+          </button>
+        </div>
       </div>}
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)]">
         <div className={`bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm ${activeChat ? 'hidden lg:block' : 'block'}`}>
-          <div className="px-4 py-4 border-b border-slate-100 text-sm font-semibold">Conversations</div>
+          <div className="border-b border-slate-100 px-4 py-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-sm font-semibold text-slate-900">Conversations</div>
+              <div className="text-xs text-slate-400">{conversations.length} total</div>
+            </div>
+            <label className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-slate-400 focus-within:border-emerald-500 focus-within:bg-white">
+              <Search className="h-4 w-4 shrink-0" />
+              <input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search conversations" className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400" aria-label="Search conversations" />
+            </label>
+            <div className="mt-3 flex gap-1 overflow-x-auto pb-0.5">
+              {(['All', 'Buyers', 'Sellers', 'Unread'] as const).map(option => (
+                <button key={option} type="button" onClick={() => setFilter(option)} className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${filter === option ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="max-h-[calc(100vh-180px)] overflow-y-auto">
-            {conversations.length > 0 ? (
-              conversations.map((conv, idx) => {
+            {visibleConversations.length > 0 ? (
+              visibleConversations.map((conv) => {
+                const idx = conversations.indexOf(conv);
                 const user = users.find(u => u.id === conv.otherUserId);
                 const last = getLastMessage(conv.chatId);
+                const lastMessage = getLastMessageRecord(conv.chatId);
                 const isSelected = idx === selected;
-                const lastReadIso = conv.chatId ? (chatLastRead ? chatLastRead[conv.chatId] : undefined) : undefined;
-                const unreadCount = conv.chatId ? messages.filter(m => m.chatId === conv.chatId && m.senderId !== currentUser?.id && new Date(m.timestamp).getTime() > new Date(lastReadIso || 0).getTime()).length : 0;
+                const unreadCount = getUnreadCount(conv);
 
                 return (
                   <button
@@ -273,7 +325,7 @@ export const MessagesPage = ({
                     }}
                     onMouseEnter={() => setSelected(idx)}
                     aria-selected={isSelected}
-                    className={`w-full flex items-center gap-3 px-3 py-3 text-left border-b border-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 ${isSelected ? 'bg-emerald-50 border-l-4 border-emerald-500 pl-3' : 'hover:bg-slate-50'}`}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-left border-b border-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 ${unreadCount > 0 ? 'bg-emerald-50/40' : ''} ${isSelected ? 'bg-emerald-50 border-l-4 border-emerald-500 pl-3' : 'hover:bg-slate-50'}`}
                   >
                     <div className="flex-shrink-0 h-9 w-9 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center">
                       {user?.avatar ? (
@@ -287,9 +339,13 @@ export const MessagesPage = ({
                     <div className="min-w-0 flex-1 flex flex-col justify-center">
                       <div className="flex items-center justify-between gap-3">
                         <div className="text-sm font-semibold truncate">{conv.otherUserName}</div>
-                        <div className="text-[11px] text-slate-400 whitespace-nowrap">{formatTimestamp(messages.find(m => m.chatId === conv.chatId)?.timestamp || undefined) || ''}</div>
+                        <div className="text-[11px] text-slate-400 whitespace-nowrap">{formatTimestamp(lastMessage?.timestamp) || ''}</div>
                       </div>
-                      <div className="text-[12px] text-slate-500 truncate">{last ? String(last) : 'Tap to chat'}</div>
+                      <div className="mt-0.5 flex items-center gap-1.5 text-[12px] truncate">
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true" />
+                        <span className={`${unreadCount > 0 ? 'font-semibold text-slate-700' : 'text-slate-500'} truncate`}>{last ? String(last) : 'No messages yet'}</span>
+                      </div>
+                      {conv.listingTitle && <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-400 truncate"><Package className="h-3 w-3 shrink-0" /> {conv.listingTitle}</div>}
                     </div>
                     {unreadCount > 0 && (
                       <div className="ml-3 flex-shrink-0">
@@ -314,7 +370,7 @@ export const MessagesPage = ({
                   onClick={onCloseConversation}
                   className="inline-flex items-center justify-center h-9 w-9 rounded-2xl border border-slate-200 text-slate-600 hover:bg-slate-50"
                 >
-                  ←
+                  <ChevronLeft className="h-5 w-5" />
                 </button>
                 <div className="flex min-w-0 items-center gap-3">
                   <button
@@ -332,12 +388,22 @@ export const MessagesPage = ({
                   </button>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-base font-semibold">{activeChat.otherUserName}</div>
-                    {activeChat.listingTitle && <div className="text-sm text-slate-500 truncate">{activeChat.listingTitle}</div>}
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Available to message</div>
                   </div>
                 </div>
               </div>
-              <div className="shrink-0 text-xs text-slate-400">{activeChat.chatId ? formatTimestamp(messages.find(m => m.chatId === activeChat.chatId)?.timestamp || undefined) : ''}</div>
+              <div className="flex shrink-0 items-center gap-2">
+                <button type="button" onClick={onOpenChatUserProfile} className="hidden rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 sm:block">View profile</button>
+                <button type="button" className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100" aria-label="More conversation options" title="More options"><MoreVertical className="h-5 w-5" /></button>
+              </div>
             </div>
+            {activeChat.orderId && activeChat.listingTitle && (
+              <button type="button" onClick={() => onOpenOrder?.(activeChat.orderId!)} className="mx-4 mt-4 flex w-[calc(100%-2rem)] items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-left transition hover:border-emerald-300 hover:bg-emerald-50">
+                {activeChat.listingImage ? <img src={activeChat.listingImage} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" /> : <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-700"><Package className="h-5 w-5" /></span>}
+                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-slate-900">{activeChat.listingTitle}</span><span className="mt-0.5 block text-xs text-slate-500">Order #{activeChat.orderId} {activeChat.orderPrice !== undefined ? `· ₦${activeChat.orderPrice.toLocaleString()}` : ''}</span></span>
+                <span className="shrink-0 text-xs font-semibold text-emerald-700">View order</span>
+              </button>
+            )}
             <div id="chat-scroll" className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
               {chatMessages.length > 0 ? (
                 chatMessages.map(message => {
@@ -372,9 +438,10 @@ export const MessagesPage = ({
                   );
                 })
               ) : (
-                <div className="text-center text-slate-400 py-14">No messages yet. Say hello to start the conversation.</div>
+                <div className="mx-auto flex max-w-xs flex-col items-center py-14 text-center"><span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700"><MessageCircle className="h-5 w-5" /></span><div className="font-semibold text-slate-800">No messages yet</div><div className="mt-1 text-sm text-slate-400">Say hello to start the conversation.</div></div>
               )}
             </div>
+            <div className="mx-4 mb-2 flex items-center gap-2 text-[11px] text-slate-400"><span>🔒</span> Keep payments and transactions inside MarketConnect.</div>
             <div className="messages-conversation__composer shrink-0 border-t border-slate-100 bg-white px-4 py-4">
               <div className="flex flex-col gap-3">
                 {chatImage ? (
@@ -450,7 +517,15 @@ export const MessagesPage = ({
                   </div>
                 ) : null}
 
-                <div className="chat-composer flex items-center gap-2">
+                <div className="chat-composer relative flex items-center gap-2">
+                  {showActions && <div className="absolute bottom-14 left-0 z-10 w-52 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+                    <button type="button" onClick={() => setShowActions(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50"><ShoppingBag className="h-4 w-4 text-emerald-600" /> Send product <span className="ml-auto text-[10px] text-slate-400">Coming soon</span></button>
+                    <button type="button" onClick={() => { setShowActions(false); pickImage(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50"><ImagePlus className="h-4 w-4 text-emerald-600" /> Send image</button>
+                    <button type="button" onClick={() => setShowActions(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-500 hover:bg-slate-50"><MapPin className="h-4 w-4" /> Share location <span className="ml-auto text-[10px] text-slate-400">Unavailable</span></button>
+                    <button type="button" onClick={() => setShowActions(false)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-500 hover:bg-slate-50"><Package className="h-4 w-4" /> Send order <span className="ml-auto text-[10px] text-slate-400">Unavailable</span></button>
+                    <button type="button" onClick={() => { setShowActions(false); pickImage(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50"><Paperclip className="h-4 w-4 text-emerald-600" /> Attach file</button>
+                  </div>}
+                  <button type="button" onClick={() => setShowActions(value => !value)} className="chat-composer__action inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50" aria-label="More attachment options" title="Add attachment"><Plus className="h-5 w-5" /></button>
                   <button
                     type="button"
                     onClick={pickImage}

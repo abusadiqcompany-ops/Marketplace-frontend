@@ -67,6 +67,10 @@ interface ChatConversation {
   otherUserName: string;
   listingId?: string;
   listingTitle?: string;
+  listingImage?: string;
+  orderId?: string;
+  orderPrice?: number;
+  orderStatus?: string;
 }
 
 const CATEGORIES = [
@@ -1053,13 +1057,17 @@ function MarketConnectApp() {
     if (!currentUser) return [];
 
     if (currentUser.role === 'admin') {
-      const convMap = new Map<string, { ids: Set<string>; names: Map<string, string>; listingId?: string; listingTitle?: string; primaryId: string }>();
+      const convMap = new Map<string, { ids: Set<string>; names: Map<string, string>; listingId?: string; listingTitle?: string; orderId?: string; orderPrice?: number; orderStatus?: string; primaryId: string }>();
 
       messages.forEach(msg => {
         const chatId = msg.chatId;
         const chatParts = chatId.split('-');
         const participantIds = chatParts.slice(0, 2);
         const listing = listings.find(l => chatParts.slice(2).join('-') === l.id);
+        const relatedOrder = orders.find(order => {
+          const orderChatId = [order.buyerId, order.sellerId].sort().join('-') + (order.listingId ? `-${order.listingId}` : '');
+          return orderChatId === chatId;
+        });
         const existing = convMap.get(chatId);
 
         if (!existing) {
@@ -1070,6 +1078,9 @@ function MarketConnectApp() {
             names,
             listingId: listing?.id,
             listingTitle: listing?.title,
+            orderId: relatedOrder?.id,
+            orderPrice: relatedOrder?.price,
+            orderStatus: relatedOrder?.status,
             primaryId: participantIds.find(id => id !== msg.senderId) || msg.senderId,
           });
           return;
@@ -1107,6 +1118,7 @@ function MarketConnectApp() {
           otherUserName: participantNames.join(' ↔ '),
           listingId: data.listingId,
           listingTitle: data.listingTitle,
+          listingImage: data.listingId ? listings.find(listing => listing.id === data.listingId)?.images?.[0] : undefined,
         };
       });
     }
@@ -1128,6 +1140,10 @@ function MarketConnectApp() {
 
       const listingId = chatParts.slice(2).join('-') || undefined;
       const listing = listingId ? listings.find(l => l.id === listingId) : undefined;
+      const relatedOrder = myOrders.find(order => {
+        const orderChatId = [order.buyerId, order.sellerId].sort().join('-') + (order.listingId ? `-${order.listingId}` : '');
+        return orderChatId === chatId;
+      });
 
       if (!convMap.has(chatId)) {
         convMap.set(chatId, {
@@ -1136,6 +1152,10 @@ function MarketConnectApp() {
           otherUserName: otherUser.name,
           listingId,
           listingTitle: listing?.title,
+            listingImage: listing?.images?.[0],
+            orderId: relatedOrder?.id,
+            orderPrice: relatedOrder?.price,
+            orderStatus: relatedOrder?.status,
         });
       }
     });
@@ -1152,7 +1172,11 @@ function MarketConnectApp() {
             otherUserId: otherId,
             otherUserName: other.name,
             listingId: order.listingId,
-            listingTitle: order.listingTitle
+            listingTitle: order.listingTitle,
+            listingImage: listings.find(listing => listing.id === order.listingId)?.images?.[0],
+            orderId: order.id,
+            orderPrice: order.price,
+            orderStatus: order.status,
           });
         }
       }
@@ -3757,6 +3781,7 @@ function MarketConnectApp() {
                   }}
                   timestampLocale={navigator.language}
                   timestampTimeZone={Intl.DateTimeFormat().resolvedOptions().timeZone}
+                  onOpenOrder={() => navigateTo('orders')}
                   onOpenConversation={(conv: any) => loadChat(conv)}
                 />
               </React.Suspense>
