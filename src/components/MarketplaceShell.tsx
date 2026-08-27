@@ -158,7 +158,7 @@ export function MarketplaceShell({
                   )}
                 </div>
                 <div onClick={onOpenProfile} className="flex cursor-pointer items-center gap-2">
-                  <img src={currentUserSafe.avatar} alt="" className="w-9 h-9 rounded-2xl object-cover ring-2 ring-white" />
+                  <img src={currentUserSafe.avatar} alt="" width="36" height="36" decoding="async" className="h-9 w-9 rounded-2xl object-cover ring-2 ring-white" />
                   <div className="hidden md:block text-sm">
                     <div className="font-medium leading-none">{currentUserSafe.name}</div>
                     <div className="text-[10px] text-emerald-600 capitalize">{currentUserSafe.role}</div>

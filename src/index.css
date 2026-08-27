@@ -30,6 +30,10 @@ img, video, canvas, svg {
   max-width: 100%;
 }
 
+button, a {
+  touch-action: manipulation;
+}
+
 .chat-bubble {
   position: relative;
   max-width: min(85%, 30rem);

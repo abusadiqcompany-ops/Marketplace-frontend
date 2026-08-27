@@ -315,7 +315,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, profileRe
           <div className="p-6 sm:p-8 md:p-12 flex flex-col gap-5 md:flex-row md:items-center md:justify-between md:gap-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full min-w-0">
               <div className="relative flex-shrink-0">
-                <img src={pendingAvatarPreview || profile.avatar || `https://i.pravatar.cc/150?u=${profile.id}`} alt="avatar" className="w-24 h-24 md:w-28 md:h-28 rounded-full ring-4 ring-white object-cover" />
+                <img src={pendingAvatarPreview || profile.avatar || `https://i.pravatar.cc/150?u=${profile.id}`} alt="avatar" width="112" height="112" decoding="async" className="w-24 h-24 rounded-full object-cover ring-4 ring-white md:h-28 md:w-28" />
                 <button onClick={pickAvatar} className="absolute right-0 bottom-0 bg-white p-2 rounded-full shadow-md -translate-x-2 translate-y-2" aria-label="Upload profile photo">
                   <Plus className="w-4 h-4 text-slate-800" />
                 </button>

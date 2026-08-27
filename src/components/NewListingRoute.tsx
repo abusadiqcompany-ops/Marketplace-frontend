@@ -260,7 +260,7 @@ export function NewListingRoute({
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
                   {listingForm.images.map((img, index) => (
                     <div key={index} className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
-                      <img src={img} alt={`preview-${index}`} className="h-40 w-full object-cover" />
+                      <img src={img} alt={`preview-${index}`} width="600" height="400" loading="lazy" decoding="async" className="h-40 w-full object-cover" />
                       <button type="button" onClick={() => handleDraftImageRemove(index)} className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-600 shadow-md hover:bg-slate-100">
                         ×
                       </button>
@@ -279,7 +279,7 @@ export function NewListingRoute({
               <div className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400 mb-4">Listing preview</div>
               <div className="rounded-3xl overflow-hidden bg-slate-100">
                 {listingForm.images.length > 0 ? (
-                  <img src={listingForm.images[0]} alt="Preview" className="h-64 w-full object-cover" />
+                  <img src={listingForm.images[0]} alt="Preview" width="600" height="400" decoding="async" className="h-64 w-full object-cover" />
                 ) : (
                   <div className="flex h-64 items-center justify-center text-slate-400">Image preview appears here</div>
                 )}

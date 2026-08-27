@@ -1,9 +1,8 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { 
   Home, MessageCircle, User, ShoppingBag, Shield, Plus, Search, Filter, Heart, 
-  Star, MapPin, Check, X, Send, LogOut, CreditCard, Download, Wallet, Upload,
-  Eye, EyeOff, Bell, BellRing, Inbox, Sparkles
+  Star, MapPin, Check, X, CreditCard, Download, Wallet, Upload, Eye, EyeOff
 } from 'lucide-react';
 import { User as UserType, Listing, Message, Order, Review, Role, Transaction, Report, PortalNotification, AccountDeletionRequest, AppNotification, NotificationCategory } from './types';
 import {
@@ -58,12 +57,9 @@ import {
 } from './api/client';
 import { setOnAuthFailure } from './api/client';
 import { getAllStates } from './data/nigerian-locations';
-import { NotificationCard } from './components/NotificationCard';
 import { MarketplaceShell } from './components/MarketplaceShell';
 import { getAccessToken } from './api/client';
-import { AuthPage } from './components/AuthPage';
-import { LandingPage } from './components/LandingPage';
-import { NewListingForm, type ListingFormValues } from './components/NewListingForm';
+import type { ListingFormValues } from './components/NewListingForm';
 
 interface ChatConversation {
   chatId?: string;
@@ -78,6 +74,8 @@ const CATEGORIES = [
   'Phones & Accessories',
   'Fashion',
    'Clothes',
+  'Shoes',
+   'caps',
    'Jewellery',
   'Furniture',
   'Vehicles',
@@ -114,6 +112,9 @@ const NIGERIAN_BANKS = [
 
 const ProfilePage = React.lazy(() => import('./components/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const MessagesPage = React.lazy(() => import('./components/MessagesPage').then(m => ({ default: m.MessagesPage })));
+const AuthPage = React.lazy(() => import('./components/AuthPage').then(m => ({ default: m.AuthPage })));
+const LandingPage = React.lazy(() => import('./components/LandingPage').then(m => ({ default: m.LandingPage })));
+const NewListingForm = React.lazy(() => import('./components/NewListingForm').then(m => ({ default: m.NewListingForm })));
 
 const normalizeApiUrl = (url: string): string => {
   const trimmed = url.trim();
@@ -857,7 +858,7 @@ function MarketConnectApp() {
     loadOrders(currentUser);
 
     if (currentUser && currentUser.role !== 'admin') {
-      const refreshTimer = window.setInterval(() => loadOrders(currentUser), 4000);
+      const refreshTimer = window.setInterval(() => loadOrders(currentUser), 30000);
       const refreshOnFocus = () => loadOrders(currentUser);
       window.addEventListener('focus', refreshOnFocus);
 
@@ -871,7 +872,7 @@ function MarketConnectApp() {
     return () => {
       cancelled = true;
     };
-  }, [authInitialized, currentUser]);
+  }, [authInitialized, currentUser?.id, currentUser?.role]);
 
   useEffect(() => {
     if (!authInitialized || !currentUser || activeTab !== 'activity') return;
@@ -916,7 +917,7 @@ function MarketConnectApp() {
     };
 
     fetchBalance();
-  }, [authInitialized, currentUser]);
+  }, [authInitialized, currentUser?.id]);
 
   const normalizeListingLocation = (location: any) => {
     if (!location) return '';
@@ -2187,7 +2188,7 @@ function MarketConnectApp() {
         <button onClick={() => navigate(-1)} className="mb-8 text-sm text-slate-500 hover:text-slate-900">← Back</button>
         <div className="bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-200">
           <div className="relative h-72 bg-slate-100 overflow-hidden">
-            <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover" />
+            <img src={listing.images[0]} alt={listing.title} width="600" height="400" decoding="async" className="h-full w-full object-cover" />
           </div>
           <div className="grid gap-8 p-4 sm:p-8 lg:grid-cols-[1.3fr_0.7fr] lg:gap-10">
             <div>
@@ -2200,7 +2201,7 @@ function MarketConnectApp() {
               {seller && (
                 <div className="mt-10 rounded-3xl bg-slate-50 p-6 border border-slate-200">
                   <div className="flex items-center gap-4">
-                    <img src={seller.avatar} alt={seller.name} className="w-16 h-16 rounded-2xl object-cover" />
+                    <img src={seller.avatar} alt={seller.name} width="64" height="64" loading="lazy" decoding="async" className="h-16 w-16 rounded-2xl object-cover" />
                     <div>
                       <div className="text-lg font-semibold">{seller.businessName || seller.name}</div>
                       <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -2278,7 +2279,7 @@ function MarketConnectApp() {
         <div className="mb-10 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="flex items-center gap-5">
-              <img src={seller.avatar} alt={seller.name} className="w-24 h-24 rounded-3xl object-cover" />
+              <img src={seller.avatar} alt={seller.name} width="96" height="96" decoding="async" className="h-24 w-24 rounded-3xl object-cover" />
               <div>
                 <div className="text-4xl font-semibold">{seller.businessName || seller.name}</div>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -2354,7 +2355,7 @@ function MarketConnectApp() {
           {sellerListings.map(listing => (
             <div key={listing.id} className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6">
               <div className="h-40 overflow-hidden rounded-3xl mb-5">
-                <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover" />
+                <img src={listing.images[0]} alt={listing.title} width="600" height="400" loading="lazy" decoding="async" className="h-full w-full object-cover" />
               </div>
               <div className="text-lg font-semibold mb-2">{listing.title}</div>
               <div className="text-sm text-slate-500 mb-4">{normalizeListingLocation(listing.location)}</div>
@@ -3540,6 +3541,10 @@ function MarketConnectApp() {
           <img 
             src={listing.images[0]} 
             alt={listing.title} 
+            loading="lazy"
+            decoding="async"
+            width="600"
+            height="400"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
           />
           <button 
@@ -4211,7 +4216,7 @@ function MarketConnectApp() {
               <div className="rounded-3xl border bg-white p-4 sm:p-8">
                 <div className="flex flex-col md:flex-row gap-8 items-center mb-9">
                   <div className="relative">
-                    <img src={profilePhoto || currentUserSafe.avatar} alt="" className="w-24 h-24 rounded-3xl ring-4 ring-slate-100 object-cover" />
+                    <img src={profilePhoto || currentUserSafe.avatar} alt="" width="96" height="96" decoding="async" className="w-24 h-24 rounded-3xl ring-4 ring-slate-100 object-cover" />
                     <label className="absolute -bottom-1 -right-1 bg-slate-900 text-white p-2 rounded-full border border-white cursor-pointer hover:bg-slate-800 transition">
                       <Upload className="w-4 h-4" />
                       <input id="profile-photo-upload" name="profilePhoto" type="file" accept="image/*" onChange={handleProfilePhotoUpload} className="hidden" />

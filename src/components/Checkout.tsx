@@ -54,7 +54,11 @@ export function Checkout({
           <img
             src={listing.images?.[0] || 'https://via.placeholder.com/80'}
             alt={listing.title}
-            className="w-20 h-20 rounded-lg object-cover"
+            width="80"
+            height="80"
+            loading="lazy"
+            decoding="async"
+            className="h-20 w-20 rounded-lg object-cover"
           />
           <div className="flex-1">
             <h3 className="font-semibold text-gray-900">{listing.title}</h3>

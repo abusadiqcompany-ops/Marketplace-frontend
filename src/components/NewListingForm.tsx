@@ -272,7 +272,7 @@ export function NewListingForm({ onCancel, onPublish, editingListing }: NewListi
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
                 {form.images.map((image, index) => (
                   <div key={`${image}-${index}`} className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
-                    <img src={image} alt={`preview-${index}`} className="h-40 w-full object-cover" />
+                    <img src={image} alt={`preview-${index}`} width="600" height="400" loading="lazy" decoding="async" className="h-40 w-full object-cover" />
                     <button type="button" onClick={() => removeImage(index)} className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm">×</button>
                   </div>
                 ))}
@@ -286,7 +286,7 @@ export function NewListingForm({ onCancel, onPublish, editingListing }: NewListi
             <div className="mb-4 text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">Listing preview</div>
             <div className="overflow-hidden rounded-[28px] bg-slate-100">
               {form.images.length > 0 ? (
-                <img src={form.images[0]} alt="Preview" className="h-64 w-full object-cover" />
+                <img src={form.images[0]} alt="Preview" width="600" height="400" decoding="async" className="h-64 w-full object-cover" />
               ) : (
                 <div className="flex h-64 items-center justify-center text-slate-400">Image preview appears here</div>
               )}

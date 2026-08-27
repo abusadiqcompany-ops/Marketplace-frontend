@@ -277,7 +277,7 @@ export const MessagesPage = ({
                   >
                     <div className="flex-shrink-0 h-9 w-9 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center">
                       {user?.avatar ? (
-                        <img src={user.avatar} alt={conv.otherUserName} className="h-full w-full object-cover" />
+                        <img src={user.avatar} alt={conv.otherUserName} width="36" height="36" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                       ) : (
                         <div className="h-9 w-9 rounded-full bg-slate-300 flex items-center justify-center text-slate-500">
                           <User className="w-4 h-4" />
@@ -323,7 +323,7 @@ export const MessagesPage = ({
                     className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center hover:ring-2 hover:ring-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     {activeChatUser?.avatar ? (
-                      <img src={activeChatUser.avatar} alt={activeChat.otherUserName} className="h-full w-full object-cover" />
+                      <img src={activeChatUser.avatar} alt={activeChat.otherUserName} width="40" height="40" decoding="async" className="h-full w-full object-cover" />
                     ) : (
                       <div className="h-10 w-10 rounded-full bg-slate-300 flex items-center justify-center text-slate-500">
                         <User className="w-5 h-5" />
@@ -350,6 +350,10 @@ export const MessagesPage = ({
                           <img
                             src={message.image}
                             alt="message attachment"
+                            loading="lazy"
+                            decoding="async"
+                            width="600"
+                            height="400"
                             className="max-h-72 w-full rounded-3xl object-cover"
                           />
                         ) : null}
@@ -376,7 +380,7 @@ export const MessagesPage = ({
                 {chatImage ? (
                   <div className="rounded-3xl border border-slate-200 bg-slate-50 p-3 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <img src={chatImage} alt="attachment preview" className="h-14 w-14 rounded-3xl object-cover" />
+                      <img src={chatImage} alt="attachment preview" width="56" height="56" decoding="async" className="h-14 w-14 rounded-3xl object-cover" />
                       <div>
                         <div className="text-sm font-semibold">Photo ready to send</div>
                         <div className="text-xs text-slate-500">Tap send or remove</div>
