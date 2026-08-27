@@ -1715,7 +1715,7 @@ function MarketConnectApp() {
         // signup expects buyer | seller
         registerForm.role as 'buyer' | 'seller'
       );
-      const successMessage = response.message || 'Verification codes have been sent to your email and phone number. Please check both to complete verification.';
+      const successMessage = response.message || 'Verification codes have been sent to your email . Please check to complete verification.';
       setPendingSignupUser(response.user as UserType);
       setEmailOtp('');
       localStorage.setItem('mc_pending_signup', JSON.stringify(response.user));
@@ -4774,7 +4774,7 @@ function MarketConnectApp() {
             <div className="text-slate-600 mb-8">{confirmMessage}</div>
             <div className="flex gap-4">
               <button onClick={closeConfirmModal} className="flex-1 py-3 border rounded-3xl">Cancel</button>
-              <button onClick={() => { confirmAction(); }} className="flex-1 py-3 bg-emerald-600 text-white rounded-3xl">Confirm</button>
+              <button onClick={() => { closeConfirmModal(); confirmAction(); }} className="flex-1 py-3 bg-emerald-600 text-white rounded-3xl">Confirm</button>
             </div>
           </div>
         </div>
