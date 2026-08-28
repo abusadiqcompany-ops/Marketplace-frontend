@@ -18,7 +18,7 @@ type NewListingFormProps = {
   editingListing?: Listing | null;
 };
 
-const categories = ['Electronics', 'Fashion', 'Furniture', 'Vehicles', 'Food & Drinks', 'Real Estate', 'Services', 'Agriculture', 'Sports', 'Books', 'Health & Beauty', 'Pharmercy', 'Home & Garden', 'Others'];
+const categories = ['Electronics', 'Phone&Accessories','Fashion', 'Shoes', 'Clothes', 'Caps', 'Furniture', 'Vehicles', 'Food & Drinks', 'Real Estate', 'Services', 'Agriculture', 'Sports', 'Books', 'Health & Beauty', 'Pharmercy', 'Home & Garden', 'Others'];
 const locations = ['Lagos', 'Abuja', 'Port Harcourt', 'Kano', 'Ibadan', 'Enugu', 'Kaduna', 'Benin City', 'Abeokuta', 'Owerri', 'Jos', 'Akure', 'Ilorin', 'Uyo', 'Maiduguri', 'Sokoto', 'Katsina', 'Bauchi', 'Gombe', 'Yola'];
 const conditions = ['New', 'Like New', 'Used', 'Refurbished'] as const;
 
