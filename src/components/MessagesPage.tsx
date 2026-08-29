@@ -54,6 +54,7 @@ export const MessagesPage = ({
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [playbackSeconds, setPlaybackSeconds] = useState(0);
   const [isPlayingRecording, setIsPlayingRecording] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recordingChunksRef = useRef<Blob[]>([]);
@@ -273,6 +274,23 @@ export const MessagesPage = ({
     playbackRef.current?.pause();
   }, []);
 
+  const handleMessageKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (isSending) return;
+    setIsSending(true);
+    try {
+      await onSendMessage();
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   useEffect(() => {
     if (!showActions) return;
     const handleOutsideClick = (event: MouseEvent) => {
@@ -288,30 +306,39 @@ export const MessagesPage = ({
   };
 
   const sendProduct = () => {
-    if (!activeChat?.listingTitle) return;
+    if (!activeChat?.listingTitle || isSending) return;
     const price = activeChat.orderPrice !== undefined ? `\nPrice: ₦${activeChat.orderPrice.toLocaleString()}` : '';
+    setIsSending(true);
     onSendMessage(`Product: ${activeChat.listingTitle}${price}`, activeChat.listingImage);
     setShowActions(false);
+    setTimeout(() => setIsSending(false), 500);
   };
 
   const shareLocation = () => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation || isSending) return;
+    setIsSending(true);
     navigator.geolocation.getCurrentPosition(
       position => {
         onSendMessage(`My location: ${position.coords.latitude.toFixed(5)}, ${position.coords.longitude.toFixed(5)}`);
         setShowActions(false);
+        setIsSending(false);
       },
-      () => setShowActions(false),
+      () => {
+        setShowActions(false);
+        setIsSending(false);
+      },
       { enableHighAccuracy: false, timeout: 10000 }
     );
   };
 
   const sendOrder = () => {
-    if (!activeChat?.orderId) return;
+    if (!activeChat?.orderId || isSending) return;
     const status = activeChat.orderStatus || 'pending';
     const price = activeChat.orderPrice !== undefined ? ` · ₦${activeChat.orderPrice.toLocaleString()}` : '';
+    setIsSending(true);
     onSendMessage(`Order #${formatOrderReference(activeChat.orderId)}: ${activeChat.listingTitle || 'Marketplace order'}${price} · ${status}`);
     setShowActions(false);
+    setTimeout(() => setIsSending(false), 500);
   };
 
   return (
@@ -561,11 +588,11 @@ export const MessagesPage = ({
 
                 <div ref={actionsRef} className="chat-composer relative flex items-center gap-2">
                   {showActions && <div className="absolute bottom-14 left-0 z-10 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-                    <button type="button" onClick={sendProduct} disabled={!activeChat?.listingTitle} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"><Package className="h-4 w-4 text-emerald-600" /> Send product</button>
-                    <button type="button" onClick={() => { setShowActions(false); pickImage(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50"><ImagePlus className="h-4 w-4 text-emerald-600" /> Send photo</button>
-                    <button type="button" onClick={shareLocation} disabled={!navigator.geolocation} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"><MapPin className="h-4 w-4 text-emerald-600" /> Share location</button>
-                    <button type="button" onClick={sendOrder} disabled={!activeChat?.orderId} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"><Paperclip className="h-4 w-4 text-emerald-600" /> Send order</button>
-                    <button type="button" onClick={() => { setShowActions(false); pickImage(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50"><Paperclip className="h-4 w-4 text-emerald-600" /> Attach file</button>
+                    <button type="button" onClick={sendProduct} disabled={!activeChat?.listingTitle || isSending} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"><Package className="h-4 w-4 text-emerald-600" /> Send product</button>
+                    <button type="button" onClick={() => { setShowActions(false); pickImage(); }} disabled={isSending} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"><ImagePlus className="h-4 w-4 text-emerald-600" /> Send photo</button>
+                    <button type="button" onClick={shareLocation} disabled={!navigator.geolocation || isSending} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"><MapPin className="h-4 w-4 text-emerald-600" /> Share location</button>
+                    <button type="button" onClick={sendOrder} disabled={!activeChat?.orderId || isSending} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"><Paperclip className="h-4 w-4 text-emerald-600" /> Send order</button>
+                    <button type="button" onClick={() => { setShowActions(false); pickImage(); }} disabled={isSending} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"><Paperclip className="h-4 w-4 text-emerald-600" /> Attach file</button>
                   </div>}
                   <button type="button" onClick={() => setShowActions(value => !value)} className="chat-composer__action inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50" aria-label="More attachment options" title="Add attachment"><Plus className="h-5 w-5" /></button>
                   <button
@@ -595,13 +622,15 @@ export const MessagesPage = ({
                     type="text"
                     value={newMessage}
                     onChange={(event) => onChangeMessage(event.target.value)}
+                    onKeyDown={handleMessageKeyDown}
                     placeholder="Write a message..."
                     className="chat-composer__input min-w-0 flex-1 rounded-2xl border border-slate-200 px-3 py-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                   />
                   <button
                     type="button"
-                    onClick={onSendMessage}
-                    className="chat-composer__action inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 transition-colors"
+                    onClick={handleSendMessage}
+                    disabled={isSending}
+                    className="chat-composer__action inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Send message"
                     title="Send message"
                   >
