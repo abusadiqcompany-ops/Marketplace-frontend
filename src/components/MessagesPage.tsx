@@ -404,7 +404,7 @@ export const MessagesPage = ({
         </div>
 
         {activeChat ? (
-          <div className="messages-conversation bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col overflow-hidden min-h-[calc(100vh-180px)]">
+          <div className="messages-conversation bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col overflow-hidden min-h-[calc(100dvh-180px)] lg:min-h-[calc(100vh-180px)]">
             <div className="messages-conversation__header shrink-0 px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <button
