@@ -81,6 +81,7 @@ const CATEGORIES = [
   'Shoes',
    'caps',
    'Jewellery',
+   'perfume' ,
   'Furniture',
   'Vehicles',
   'Food & Drinks',
