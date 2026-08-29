@@ -177,13 +177,21 @@ button, a {
 
   .chat-composer {
     gap: 0.375rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     width: 100%;
+    display: flex;
+    align-items: center;
+    min-height: 2.75rem;
   }
 
   .chat-composer__action {
     flex: 0 0 2.625rem;
     height: 2.75rem;
+    min-width: 2.75rem;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
   .chat-composer__input {
@@ -193,6 +201,43 @@ button, a {
     min-height: 2.75rem;
     flex: 1 1 auto;
     min-width: 0;
+  }
+
+  /* Send button - always visible and prominent on mobile */
+  .chat-composer__action:last-child {
+    flex: 0 0 auto;
+    width: 2.75rem;
+    height: 2.75rem;
+    min-width: 44px;
+    min-height: 44px;
+    background-color: #10b981 !important;
+    color: white !important;
+    border: none !important;
+    z-index: 20;
+    margin-left: auto;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .chat-composer__action:last-child:hover {
+    background-color: #059669 !important;
+  }
+
+  .chat-composer__action:last-child:active {
+    background-color: #047857 !important;
+  }
+
+  .chat-composer__action:last-child svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: white;
+  }
+
+  /* Hide + button on small phones to save space */
+  .chat-composer__action:first-child {
+    display: flex;
   }
 
   /* Prevent keyboard from hiding input and causing zoom */
@@ -205,6 +250,18 @@ button, a {
   textarea:focus {
     outline: none;
     font-size: 16px !important;
+  }
+
+  /* Ensure all buttons are tappable - min 44x44px */
+  .chat-composer__action {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 380px) {
+  .chat-composer__action:first-child {
+    display: none;
   }
 }
 

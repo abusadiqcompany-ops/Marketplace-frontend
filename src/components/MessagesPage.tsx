@@ -601,8 +601,9 @@ export const MessagesPage = ({
                   <button
                     type="button"
                     onClick={onSendMessage}
-                    className="chat-composer__action inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white hover:bg-emerald-700"
+                    className="chat-composer__action inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 transition-colors"
                     aria-label="Send message"
+                    title="Send message"
                   >
                     <ArrowRight className="h-5 w-5" />
                   </button>
