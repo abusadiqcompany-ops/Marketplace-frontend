@@ -3726,10 +3726,6 @@ function MarketConnectApp() {
           setAuthMode('register');
           navigate(LOGIN_PATH);
         }}
-        onBrowse={() => {
-          setActiveTab('discover');
-          navigate('/discover');
-        }}
       />
     );
   }

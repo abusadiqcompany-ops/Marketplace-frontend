@@ -4,10 +4,9 @@ import { ShoppingBag } from 'lucide-react';
 type LandingPageProps = {
   onSignIn: () => void;
   onCreateAccount: () => void;
-  onBrowse?: () => void;
 };
 
-export function LandingPage({ onSignIn, onCreateAccount, onBrowse }: LandingPageProps) {
+export function LandingPage({ onSignIn, onCreateAccount }: LandingPageProps) {
   return (
     <div className="min-h-screen h-screen overflow-hidden bg-black text-white">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_#0b0f1a_0%,_#0b0f1a_36%,_black_100%)]" />
@@ -40,15 +39,6 @@ export function LandingPage({ onSignIn, onCreateAccount, onBrowse }: LandingPage
             >
               Create an Account
             </button>
-            {onBrowse && (
-              <button
-                type="button"
-                onClick={onBrowse}
-                className="w-full rounded-full border border-emerald-600 bg-emerald-600/10 px-6 py-4 text-lg font-semibold text-emerald-400 transition duration-300 hover:-translate-y-0.5 hover:bg-emerald-600/20 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 focus:ring-offset-transparent"
-              >
-                Browse Listings
-              </button>
-            )}
           </div>
         </div>
       </div>
