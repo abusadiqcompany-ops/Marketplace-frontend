@@ -58,30 +58,38 @@ api.interceptors.request.use((config) => {
     const method = (config.method || '').toString().toUpperCase();
     const fullUrl = `${config.baseURL || ''}${config.url || ''}`;
     console.debug('[api] Request:', method, fullUrl, { headers: config.headers });
+    // Store request start time for monitoring
+    (config as any).__requestStartTime = Date.now();
   } catch (e) {
     console.debug('[api] Request debug failed', e);
   }
   return config;
 });
 
-// Global auth-failure callback (set by app)
-let onAuthFailure: (() => void) | null = null;
-export function setOnAuthFailure(cb: (() => void) | null) {
-  onAuthFailure = cb;
-}
-
-// Token refresh handling
-let isRefreshing = false;
-let refreshSubscribers: Array<(token: string) => void> = [];
-const subscribeTokenRefresh = (cb: (token: string) => void) => refreshSubscribers.push(cb);
-const onRefreshed = (token: string) => {
-  refreshSubscribers.forEach(cb => cb(token));
-  refreshSubscribers = [];
-};
-
+// Response interceptor to log response timing
 api.interceptors.response.use(
-  response => response,
+  (response) => {
+    // Log response timing
+    const startTime = (response.config as any).__requestStartTime;
+    if (startTime) {
+      const duration = Date.now() - startTime;
+      const method = (response.config.method || '').toUpperCase();
+      const url = response.config.url || '';
+      console.log(`[api] ${method} ${url} - ${response.status} (${duration}ms)`);
+    }
+    return response;
+  },
   async (error) => {
+    // Log error timing
+    const startTime = (error.config as any)?.__requestStartTime;
+    if (startTime) {
+      const duration = Date.now() - startTime;
+      const method = (error.config?.method || '').toUpperCase();
+      const url = error.config?.url || '';
+      console.error(`[api] ${method} ${url} - ${error.response?.status || 'ERROR'} (${duration}ms)`, error.message);
+    }
+
+    // Handle token refresh
     const status = error?.response?.status;
     const originalRequest = error?.config;
 
@@ -136,6 +144,21 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Global auth-failure callback (set by app)
+let onAuthFailure: (() => void) | null = null;
+export function setOnAuthFailure(cb: (() => void) | null) {
+  onAuthFailure = cb;
+}
+
+// Token refresh handling
+let isRefreshing = false;
+let refreshSubscribers: Array<(token: string) => void> = [];
+const subscribeTokenRefresh = (cb: (token: string) => void) => refreshSubscribers.push(cb);
+const onRefreshed = (token: string) => {
+  refreshSubscribers.forEach(cb => cb(token));
+  refreshSubscribers = [];
+};
 
 // ============== AUTHENTICATION APIs ==============
 

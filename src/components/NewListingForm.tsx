@@ -53,10 +53,15 @@ const createInitialFormValues = (listing?: Listing | null): ListingFormValues =>
 export function NewListingForm({ onCancel, onPublish, editingListing }: NewListingFormProps) {
   const [form, setForm] = useState<ListingFormValues>(() => createInitialFormValues(editingListing));
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [publishStartTime, setPublishStartTime] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const submitAbortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     setForm(createInitialFormValues(editingListing));
+    setSubmitError(null);
   }, [editingListing]);
 
   const previewPrice = useMemo(() => {
@@ -121,11 +126,42 @@ export function NewListingForm({ onCancel, onPublish, editingListing }: NewListi
   };
 
   const handlePublish = async () => {
-    const result = await Promise.resolve(onPublish?.(form));
-    if (result !== false) {
-      resetForm();
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    const startTime = Date.now();
+    setPublishStartTime(startTime);
+    setSubmitError(null);
+    
+    console.log('[NewListingForm] Publishing listing...');
+
+    try {
+      const result = await Promise.resolve(onPublish?.(form));
+      const duration = Date.now() - startTime;
+      console.log(`[NewListingForm] Publish completed successfully in ${duration}ms`);
+      if (result !== false) {
+        resetForm();
+      }
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      const errorMessage = error?.response?.data?.error || error?.message || 'Failed to publish listing';
+      console.error(`[NewListingForm] Publish failed after ${duration}ms:`, error);
+      setSubmitError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+      setPublishStartTime(null);
     }
   };
+
+  useEffect(() => {
+    // Cleanup abort controller on unmount
+    return () => {
+      if (submitAbortControllerRef.current) {
+        submitAbortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
@@ -304,9 +340,16 @@ export function NewListingForm({ onCancel, onPublish, editingListing }: NewListi
           </div>
 
           <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
+            {submitError && (
+              <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {submitError}
+              </div>
+            )}
             <div className="flex flex-col gap-3 sm:flex-row">
-              <button type="button" onClick={onCancel} className="flex-1 rounded-3xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
-              <button type="button" onClick={handlePublish} className="flex-1 rounded-3xl bg-emerald-600 px-5 py-4 text-base font-semibold text-white shadow-sm hover:bg-emerald-700">{editingListing ? 'Update listing' : 'Publish listing'}</button>
+              <button type="button" onClick={onCancel} disabled={isSubmitting} className="flex-1 rounded-3xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">Cancel</button>
+              <button type="button" onClick={handlePublish} disabled={isSubmitting} className="flex-1 rounded-3xl bg-emerald-600 px-5 py-4 text-base font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
+                {isSubmitting ? 'Publishing...' : editingListing ? 'Update listing' : 'Publish listing'}
+              </button>
             </div>
           </div>
         </aside>

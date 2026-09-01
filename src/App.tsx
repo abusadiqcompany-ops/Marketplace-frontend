@@ -58,6 +58,7 @@ import {
 import { setOnAuthFailure } from './api/client';
 import { getAllStates } from './data/nigerian-locations';
 import { MarketplaceShell } from './components/MarketplaceShell';
+import { AuthPromptModal } from './components/AuthPromptModal';
 import { getAccessToken } from './api/client';
 import type { ListingFormValues } from './components/NewListingForm';
 
@@ -275,10 +276,13 @@ function MarketConnectApp() {
   const location = useLocation();
   const LOGIN_PATH = '/login';
   const isPublicSellerRoute = location.pathname.startsWith('/seller/');
+  const isDiscoverRoute = location.pathname === '/' || location.pathname.startsWith('/discover');
+  const isListingDetailRoute = location.pathname.startsWith('/listing/');
 
   useEffect(() => {
     const hasStoredSession = Boolean(localStorage.getItem('mc_currentUser') && localStorage.getItem('marketplace_access_token'));
-    const isAllowedGuestPath = location.pathname === LOGIN_PATH || location.pathname === '/' || isPublicSellerRoute;
+    // Allow public access to: login, home, discover, listing details, and public seller profiles
+    const isAllowedGuestPath = location.pathname === LOGIN_PATH || isDiscoverRoute || isListingDetailRoute || isPublicSellerRoute;
 
     if (!currentUser && !hasStoredSession && !isAllowedGuestPath) {
       navigate('/', { replace: true });
@@ -288,7 +292,7 @@ function MarketConnectApp() {
     if (currentUser && location.pathname === LOGIN_PATH) {
       navigate('/', { replace: true });
     }
-  }, [currentUser, location.pathname, navigate, isPublicSellerRoute]);
+  }, [currentUser, location.pathname, navigate, isPublicSellerRoute, isDiscoverRoute, isListingDetailRoute]);
 
   const getActiveTab = () => {
     const path = location.pathname || '/';
@@ -304,7 +308,7 @@ function MarketConnectApp() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [priceRange, setPriceRange] = useState([0, 50000]);
+  const [priceRange, setPriceRange] = useState([0, 10000000000]); // 10 billion - users can enter any amount
   const [selectedLocation, setSelectedLocation] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
@@ -345,6 +349,9 @@ function MarketConnectApp() {
   const [showPaymentModal, setShowPaymentModal] = useState<Order | null>(null);
   const [fulfillmentOrder, setFulfillmentOrder] = useState<Order | null>(null);
   const [showReviewModal, setShowReviewModal] = useState<Order | null>(null);
+  const [showAuthPromptModal, setShowAuthPromptModal] = useState(false);
+  const [authPromptTitle, setAuthPromptTitle] = useState('Create a Free Account');
+  const [authPromptMessage, setAuthPromptMessage] = useState('Sign in or create a free MarketConnect account to continue.');
   const [sellerStatsCache, setSellerStatsCache] = useState<Record<string, { activeListings: number; averageRating: number; totalReviews: number; salesDone: number }>>(() => {
     if (typeof window === 'undefined') return {};
     try {
@@ -359,6 +366,13 @@ function MarketConnectApp() {
   const navigateTo = (tab: string) => {
     const path = tab === 'discover' ? '/' : `/${tab}`;
     navigate(path);
+  };
+
+  // Show auth prompt modal for non-authenticated users
+  const showAuthPrompt = (title: string = 'Create a Free Account', message: string = 'Sign in or create a free MarketConnect account to continue.') => {
+    setAuthPromptTitle(title);
+    setAuthPromptMessage(message);
+    setShowAuthPromptModal(true);
   };
 
   // Form States
@@ -1904,14 +1918,10 @@ function MarketConnectApp() {
       return true;
     } catch (error: any) {
       console.error('Listing publish failed:', error?.response?.data || error?.message || error);
-      setListings(prev => editingListing
-        ? prev.map(listing => listing.id === editingListing.id ? finalListing : listing)
-        : [finalListing, ...prev]);
-      notifyVerifiedSellerListing(finalListing, currentUser);
-      addNotification(error?.response?.data?.error || error?.message || 'Listing saved locally after a publish error.', 'warning');
-      setEditingListing(null);
-      navigate(`/listing/${finalListing.id}`);
-      return true;
+      
+      // Re-throw the error so the form component can handle it
+      const errorMessage = error?.response?.data?.error || error?.message || 'Failed to publish listing. Please try again.';
+      throw new Error(errorMessage);
     }
   };
 
@@ -2125,7 +2135,7 @@ function MarketConnectApp() {
   // Contact Seller -> Open Chat
   const contactSeller = (listing: Listing) => {
     if (!currentUser) {
-      navigate(LOGIN_PATH);
+      showAuthPrompt('Message Seller', 'Create a free account to contact this seller and discuss about their products or services.');
       return;
     }
     if (listing.sellerId === currentUser.id) {
@@ -2146,7 +2156,7 @@ function MarketConnectApp() {
   // Place Order
   const placeOrder = (listing: Listing) => {
     if (!currentUser) {
-      navigate(LOGIN_PATH);
+      showAuthPrompt('Place an Order', 'Create a free account to purchase this item or service.');
       return;
     }
     setOrderRequestSent(null);
@@ -2344,7 +2354,7 @@ function MarketConnectApp() {
             <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <button onClick={() => {
                 if (!currentUser) {
-                  navigate(LOGIN_PATH);
+                  showAuthPrompt('Report Seller', 'Create a free account to report a seller if there is an issue.');
                   return;
                 }
                 setReportForm({
@@ -2359,7 +2369,7 @@ function MarketConnectApp() {
               }} className="w-full sm:w-auto px-6 py-3 rounded-3xl bg-amber-600 text-white text-sm font-semibold">Report this seller</button>
               <button onClick={() => {
                 if (!currentUser) {
-                  navigate(LOGIN_PATH);
+                  showAuthPrompt('Message Seller', 'Create a free account to contact this seller and discuss about their products or services.');
                   return;
                 }
                 if (sellerListings[0]) {
@@ -3797,7 +3807,7 @@ function MarketConnectApp() {
                   setUsers(prev => prev.map(user => user.id === updatedUser.id ? { ...user, ...updatedUser } : user));
                 }} onReport={() => {
                   if (!currentUser) {
-                    navigate(LOGIN_PATH);
+                    showAuthPrompt('Report User', 'Create a free account to report a user if there is an issue.');
                     return;
                   }
                   const otherUser = users.find(u => u.id !== currentUser.id);
@@ -3815,7 +3825,11 @@ function MarketConnectApp() {
               </React.Suspense>
             } />
             <Route path="/listing/:id" element={<ListingDetailRoute />} />
-            <Route path="/new-listing" element={<NewListingForm editingListing={editingListing} onCancel={() => { setEditingListing(null); navigate('/'); }} onPublish={handleNewListingPublish} />} />
+            <Route path="/new-listing" element={
+              <React.Suspense fallback={<div className="pt-24 px-6">Loading listing form...</div>}>
+                <NewListingForm editingListing={editingListing} onCancel={() => { setEditingListing(null); navigate('/'); }} onPublish={handleNewListingPublish} />
+              </React.Suspense>
+            } />
             <Route path="*" element={
               <>
                 {/* DISCOVER TAB */}
@@ -3853,7 +3867,7 @@ function MarketConnectApp() {
                   {cat}
                 </button>
               ))}
-              <button onClick={() => { setSearchTerm(''); setSelectedCategory(''); setSelectedLocation(''); setPriceRange([0, 50000]); }} className="text-sm text-slate-500">Clear filters</button>
+              <button onClick={() => { setSearchTerm(''); setSelectedCategory(''); setSelectedLocation(''); setPriceRange([0, 10000000000]); }} className="text-sm text-slate-500">Clear filters</button>
             </div>
 
             {showFilters && (
@@ -3874,6 +3888,21 @@ function MarketConnectApp() {
                     <input id="filter-min-price" name="minPrice" type="number" value={priceRange[0]} onChange={e => setPriceRange([+e.target.value, priceRange[1]])} className="w-full px-4 py-3 border rounded-2xl" placeholder="Min" />
                     <span className="text-slate-400">to</span>
                     <input id="filter-max-price" name="maxPrice" type="number" value={priceRange[1]} onChange={e => setPriceRange([priceRange[0], +e.target.value])} className="w-full px-4 py-3 border rounded-2xl" placeholder="Max" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!currentUser && (
+              <div className="mb-8 rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-transparent p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <div className="font-semibold text-lg text-slate-900">Ready to get started?</div>
+                    <p className="text-sm text-slate-600 mt-1">Create a free account to connect with sellers and place orders.</p>
+                  </div>
+                  <div className="flex gap-3 sm:flex-shrink-0">
+                    <button onClick={() => { setAuthMode('register'); navigate(LOGIN_PATH); }} className="px-6 py-3 bg-emerald-600 text-white font-medium rounded-3xl hover:bg-emerald-700 transition">Create Account</button>
+                    <button onClick={() => { setAuthMode('login'); navigate(LOGIN_PATH); }} className="px-6 py-3 border border-slate-300 text-slate-700 font-medium rounded-3xl hover:bg-slate-50 transition">Login</button>
                   </div>
                 </div>
               </div>
@@ -4974,6 +5003,23 @@ function MarketConnectApp() {
           </div>
         ))}
       </div>
+
+      {/* Auth Prompt Modal for non-authenticated users */}
+      <AuthPromptModal
+        isOpen={showAuthPromptModal}
+        onClose={() => setShowAuthPromptModal(false)}
+        onLogin={() => {
+          setShowAuthPromptModal(false);
+          navigate(LOGIN_PATH);
+        }}
+        onRegister={() => {
+          setShowAuthPromptModal(false);
+          setAuthMode('register');
+          navigate(LOGIN_PATH);
+        }}
+        title={authPromptTitle}
+        message={authPromptMessage}
+      />
     </MarketplaceShell>
   );
 }
