@@ -137,6 +137,9 @@ export function NewListingForm({ onCancel, onPublish, editingListing }: NewListi
     setSubmitError(null);
 
     try {
+      // Use requestAnimationFrame to ensure button feedback is immediate
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      
       const result = await Promise.resolve(onPublish?.(form));
       if (result !== false) {
         resetForm();

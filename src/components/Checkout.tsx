@@ -26,8 +26,9 @@ export function Checkout({
   >('meetup');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  const fees = calculateFees(listing.price, selectedPaymentMethod);
-  const totalAmount = listing.price + fees.total;
+  const salePrice = listing.finalPrice ?? listing.price;
+  const fees = calculateFees(salePrice, selectedPaymentMethod);
+  const totalAmount = salePrice + fees.total;
 
   const handleProceedToPayment = () => {
     if (agreedToTerms) {
@@ -63,9 +64,17 @@ export function Checkout({
           <div className="flex-1">
             <h3 className="font-semibold text-gray-900">{listing.title}</h3>
             <p className="text-sm text-gray-600 mt-1">{listing.category}</p>
-            <p className="text-lg font-bold text-blue-600 mt-2">
-              {formatCurrency(listing.price)}
-            </p>
+            <div className="mt-2">
+              {listing.discountEnabled && listing.originalPrice && (
+                <p className="text-sm text-gray-500 line-through">{formatCurrency(listing.originalPrice)}</p>
+              )}
+              <p className="text-lg font-bold text-blue-600">
+                {formatCurrency(salePrice)}
+              </p>
+              {listing.discountEnabled && listing.discountPercentage && (
+                <p className="text-sm text-green-600 font-medium">Save {formatCurrency(listing.discountAmount ?? 0)}</p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -176,8 +185,14 @@ export function Checkout({
         <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-gray-600">Item Price</span>
-            <span className="font-medium">{formatCurrency(listing.price)}</span>
+            <span className="font-medium">{formatCurrency(salePrice)}</span>
           </div>
+          {listing.discountEnabled && listing.originalPrice && (
+            <div className="flex justify-between text-green-600">
+              <span>Discount ({listing.discountPercentage}%)</span>
+              <span className="font-medium">-{formatCurrency(listing.discountAmount ?? 0)}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-gray-600">Platform Fee (3%)</span>
             <span className="font-medium">{formatCurrency(fees.platformFee)}</span>

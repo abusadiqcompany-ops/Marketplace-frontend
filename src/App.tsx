@@ -1640,35 +1640,31 @@ function MarketConnectApp() {
       relatedListingId: listing.id,
     });
 
-    users.forEach((user) => {
-      if (user.id === seller.id) return;
-      const matchesNearbyLocation = isNearbyLocationMatch(user.location, listing.location) || isNearbyLocationMatch(user.sellerLocation, listing.location);
-      if (!matchesNearbyLocation) return;
-
-      addPortalNotification({
-        title: 'Verified seller nearby',
-        message: `${seller.businessName || seller.name} just added a new listing nearby in ${listingLocation}.`,
-        type: 'listing',
-        targetUserId: user.id,
-        targetRole: 'all',
-        relatedUserId: seller.id,
-        relatedListingId: listing.id,
+    // Defer user notifications to avoid blocking with location filtering and loops
+    setTimeout(() => {
+      const nearbyUsers = users.filter((user) => {
+        if (user.id === seller.id) return false;
+        return isNearbyLocationMatch(user.location, listing.location) || isNearbyLocationMatch(user.sellerLocation, listing.location);
       });
-    });
 
-    if (currentUser && currentUser.id !== seller.id) {
-      const matchesCurrentUserLocation = isNearbyLocationMatch(currentUser.location, listing.location) || isNearbyLocationMatch(currentUser.sellerLocation, listing.location);
-      if (matchesCurrentUserLocation) {
+      nearbyUsers.forEach((user) => {
         addPortalNotification({
           title: 'Verified seller nearby',
           message: `${seller.businessName || seller.name} just added a new listing nearby in ${listingLocation}.`,
           type: 'listing',
-          targetUserId: currentUser.id,
+          targetUserId: user.id,
           targetRole: 'all',
           relatedUserId: seller.id,
           relatedListingId: listing.id,
         });
-      }
+      });
+    }, 50);
+
+    // Defer notification processing to next tick to avoid blocking UI
+    if (typeof window !== 'undefined') {
+      window.requestAnimationFrame(() => {
+        // Notification queue is already processed in setTimeout(0)
+      });
     }
   };
 
@@ -1805,7 +1801,7 @@ function MarketConnectApp() {
 
   // Listing CRUD
   const resetListingForm = () => {
-    setListingForm({ title: '', description: '', price: '', category: CATEGORIES[0], location: LOCATIONS[0], images: [], condition: 'New' });
+    setListingForm({ title: '', description: '', price: '', discountEnabled: false, discountPercentage: '0', category: CATEGORIES[0], location: LOCATIONS[0], images: [], condition: 'New' });
     setListingError(null);
     setListingSuccess(null);
     setListingValidationErrors({});
@@ -1820,6 +1816,10 @@ function MarketConnectApp() {
     const trimmedTitle = values.title.trim();
     const trimmedDescription = values.description.trim();
     const priceNum = Number(values.price);
+    const discountPercentage = Number(values.discountPercentage || 0);
+    const discountEnabled = Boolean(values.discountEnabled) && Number.isFinite(priceNum) && priceNum > 0 && discountPercentage > 0 && discountPercentage <= 90;
+    const calculatedDiscountAmount = discountEnabled ? priceNum * discountPercentage / 100 : 0;
+    const finalSellingPrice = discountEnabled ? Math.max(0, priceNum - calculatedDiscountAmount) : priceNum;
 
     if (!trimmedTitle) {
       addNotification('Please add a title for your listing.', 'warning');
@@ -1828,6 +1828,11 @@ function MarketConnectApp() {
 
     if (!Number.isFinite(priceNum) || priceNum <= 0) {
       addNotification('Please enter a valid price greater than zero.', 'warning');
+      return false;
+    }
+
+    if (values.discountEnabled && (!Number.isFinite(discountPercentage) || discountPercentage <= 0 || discountPercentage > 90)) {
+      addNotification('Discount percentage must be greater than 0% and no more than 90%.', 'warning');
       return false;
     }
 
@@ -1857,7 +1862,12 @@ function MarketConnectApp() {
       sellerName: currentUser.name,
       title: trimmedTitle,
       description: trimmedDescription,
-      price: priceNum,
+      price: finalSellingPrice,
+      originalPrice: priceNum,
+      discountEnabled,
+      discountPercentage: discountEnabled ? discountPercentage : 0,
+      discountAmount: calculatedDiscountAmount,
+      finalPrice: finalSellingPrice,
       category: values.category,
       location: values.location,
       images: values.images.length > 0 ? values.images : ['https://picsum.photos/id/160/600/400'],
@@ -1877,7 +1887,10 @@ function MarketConnectApp() {
             sellerName: currentUser.name,
             title: trimmedTitle,
             description: trimmedDescription,
-            price: priceNum,
+            price: finalSellingPrice,
+            originalPrice: priceNum,
+            discountEnabled,
+            discountPercentage: discountEnabled ? discountPercentage : 0,
             category: values.category,
             location: values.location,
             images: finalListing.images,
@@ -1894,15 +1907,21 @@ function MarketConnectApp() {
           currentUser.name,
           trimmedTitle,
           trimmedDescription,
-          priceNum,
+          finalSellingPrice,
           values.category,
           values.location,
-          finalListing.images
+          finalListing.images,
+          { originalPrice: priceNum, discountEnabled, discountPercentage: discountEnabled ? discountPercentage : 0, discountAmount: calculatedDiscountAmount, finalPrice: finalSellingPrice }
         );
         const created = createdListing && createdListing.id ? createdListing : finalListing;
         setListings(prev => [created, ...prev]);
-        notifyVerifiedSellerListing(created, currentUser);
         addNotification(editingListing ? 'Listing updated successfully!' : 'Listing published successfully!', 'success');
+        
+        // Defer non-critical operations to avoid blocking navigation
+        setTimeout(() => {
+          notifyVerifiedSellerListing(created, currentUser);
+        }, 100);
+        
         setEditingListing(null);
         navigate(`/listing/${created.id}`);
         return true;
@@ -1911,8 +1930,13 @@ function MarketConnectApp() {
       setListings(prev => editingListing
         ? prev.map(listing => listing.id === editingListing.id ? finalListing : listing)
         : [finalListing, ...prev]);
-      notifyVerifiedSellerListing(finalListing, currentUser);
       addNotification(editingListing ? 'Listing updated locally.' : 'Listing saved locally because backend auth was unavailable.', 'warning');
+      
+      // Defer non-critical operations to avoid blocking navigation
+      setTimeout(() => {
+        notifyVerifiedSellerListing(finalListing, currentUser);
+      }, 100);
+      
       setEditingListing(null);
       navigate(`/listing/${finalListing.id}`);
       return true;
@@ -1930,7 +1954,9 @@ function MarketConnectApp() {
     setListingForm({
       title: listing.title,
       description: listing.description,
-      price: listing.price.toString(),
+      price: listing.originalPrice ? String(listing.originalPrice) : listing.price.toString(),
+      discountEnabled: Boolean(listing.discountEnabled),
+      discountPercentage: listing.discountPercentage ? String(listing.discountPercentage) : '0',
       category: listing.category,
       location: typeof listing.location === 'string' ? listing.location : normalizeListingLocation(listing.location),
       images: [...listing.images],
@@ -2181,7 +2207,9 @@ function MarketConnectApp() {
       setCurrentUser(profile);
       localStorage.setItem('mc_currentUser', JSON.stringify(profile));
 
-      const totalAmount = showOrderModal.price * Math.max(1, orderQuantity);
+      const quantity = Math.max(1, orderQuantity);
+      const salePrice = showOrderModal.finalPrice ?? showOrderModal.price;
+      const totalAmount = salePrice * quantity;
       const createdOrder = await createOrder(
         showOrderModal.id,
         profile.id,
@@ -2190,11 +2218,11 @@ function MarketConnectApp() {
         showOrderModal.sellerName,
         totalAmount,
         showOrderModal.title,
-        Math.max(1, orderQuantity),
+        quantity,
         orderColor
       );
 
-      setOrders(prev => [{ ...createdOrder, price: totalAmount, quantity: Math.max(1, orderQuantity), color: orderColor }, ...prev]);
+      setOrders(prev => [{ ...createdOrder, price: totalAmount, quantity, color: orderColor, originalPrice: showOrderModal.originalPrice, discountPercentage: showOrderModal.discountPercentage, discountAmount: showOrderModal.discountAmount, finalPrice: salePrice }, ...prev]);
       setShowOrderModal(null);
       setOrderRequestSent(showOrderModal);
       addNotification('Order request sent! Seller will respond shortly.', 'success');
@@ -2257,8 +2285,19 @@ function MarketConnectApp() {
             </div>
             <div className="space-y-4">
               <div className="rounded-3xl border border-slate-200 p-6">
+                {listing.discountEnabled && listing.discountPercentage && Number(listing.discountPercentage) > 0 && (
+                  <div className="mb-3 inline-flex items-center justify-center px-3 py-1 bg-red-100 text-red-700 text-sm font-bold rounded">
+                    -{Math.round(Number(listing.discountPercentage))}% OFF
+                  </div>
+                )}
                 <div className="text-sm uppercase tracking-[0.24em] text-slate-400 mb-4">Price</div>
-                <div className="text-4xl font-semibold text-slate-900 sm:text-5xl">₦{listing.price.toLocaleString()}</div>
+                <div className="text-4xl font-semibold text-slate-900 sm:text-5xl">₦{(listing.finalPrice ?? listing.price).toLocaleString()}</div>
+                {listing.discountEnabled && listing.originalPrice && (
+                  <div>
+                    <div className="text-sm text-slate-500 line-through mt-2">₦{listing.originalPrice.toLocaleString()}</div>
+                    <div className="text-sm text-emerald-600 font-medium mt-2">Save ₦{(listing.discountAmount ?? 0).toLocaleString()}</div>
+                  </div>
+                )}
               </div>
               <div className="grid gap-3">
                 <button onClick={() => placeOrder(listing)} className="w-full py-4 rounded-3xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">Buy Now</button>
@@ -3618,7 +3657,15 @@ function MarketConnectApp() {
           <div className="flex items-start justify-between mb-2">
             <span className="px-3 py-1 text-[10px] font-semibold tracking-wider bg-slate-100 text-slate-600 rounded-full">{listing.category}</span>
             <div className="text-right">
-              <div className="font-semibold text-2xl text-slate-900 tabular-nums">₦{listing.price.toLocaleString()}</div>
+              {listing.discountEnabled && listing.discountPercentage && Number(listing.discountPercentage) > 0 && (
+                <div className="inline-flex items-center justify-center mb-1">
+                  <span className="inline-block px-2 py-0.5 mr-2 text-xs font-bold text-white bg-red-500 rounded">-{Math.round(Number(listing.discountPercentage))}%</span>
+                </div>
+              )}
+              <div className="font-semibold text-2xl text-slate-900 tabular-nums">₦{(listing.finalPrice ?? listing.price).toLocaleString()}</div>
+              {listing.discountEnabled && listing.originalPrice && (
+                <div className="text-xs text-slate-500 line-through">₦{listing.originalPrice.toLocaleString()}</div>
+              )}
             </div>
           </div>
           
