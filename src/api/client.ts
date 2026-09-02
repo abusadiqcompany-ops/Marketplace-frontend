@@ -549,7 +549,14 @@ export async function createOrder(
   price: number,
   listingTitle: string,
   quantity?: number,
-  color?: string
+  color?: string,
+  discountMeta?: {
+    originalPrice?: number;
+    discountEnabled?: boolean;
+    discountPercentage?: number;
+    discountAmount?: number;
+    finalPrice?: number;
+  }
 ) {
   const response = await api.post('/orders', {
     listingId,
@@ -561,6 +568,7 @@ export async function createOrder(
     listingTitle,
     quantity,
     color,
+    ...discountMeta,
   });
   return response.data;
 }
@@ -733,7 +741,14 @@ export async function createListing(
   price: number,
   category: string,
   location: any,
-  images: string[]
+  images: string[],
+  discountMeta?: {
+    originalPrice?: number;
+    discountEnabled?: boolean;
+    discountPercentage?: number;
+    discountAmount?: number;
+    finalPrice?: number;
+  }
 ) {
   const response = await api.post('/listings', {
     sellerId,
@@ -744,6 +759,7 @@ export async function createListing(
     category,
     location,
     images,
+    ...discountMeta,
   });
   return response.data;
 }

@@ -69,6 +69,13 @@ export interface Listing {
   title: string;
   description: string;
   price: number;
+  originalPrice?: number;
+  discountEnabled?: boolean;
+  discountPercentage?: number;
+  discountAmount?: number;
+  finalPrice?: number;
+  discountStartDate?: string;
+  discountEndDate?: string;
   category: string;
   location: Location | string;
   images: string[];
@@ -99,7 +106,13 @@ export interface Order {
   sellerId: string;
   sellerName: string;
   price: number;
+  originalPrice?: number;
+  discountEnabled?: boolean;
+  discountPercentage?: number;
+  discountAmount?: number;
+  finalPrice?: number;
   quantity?: number;
+  totalAmount?: number;
   color?: string;
   status: OrderStatus;
   paymentStatus: PaymentStatus;

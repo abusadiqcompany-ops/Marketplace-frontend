@@ -6,6 +6,8 @@ export type ListingFormValues = {
   title: string;
   description: string;
   price: string;
+  discountEnabled: boolean;
+  discountPercentage: string;
   category: string;
   location: string;
   images: string[];
@@ -18,7 +20,7 @@ type NewListingFormProps = {
   editingListing?: Listing | null;
 };
 
-const categories = ['Electronics', 'Phone&Accessories','Fashion', 'Shoes', 'Clothes', 'Caps', 'Furniture', 'perfume','Vehicles', 'Food & Drinks', 'Real Estate', 'Services', 'Agriculture', 'Sports', 'Books', 'Health & Beauty', 'Pharmercy', 'Home & Garden', 'Others'];
+const categories = ['Electronics', 'Phone&Accessories', 'Fashion', 'Shoes', 'Clothes', 'Caps', 'Furniture', 'perfume', 'Vehicles', 'Food & Drinks', 'Real Estate', 'Services', 'Agriculture', 'Sports', 'Books', 'Health & Beauty', 'Pharmercy', 'Home & Garden', 'Others'];
 const locations = ['Lagos', 'Abuja', 'Port Harcourt', 'Kano', 'Ibadan', 'Enugu', 'Kaduna', 'Benin City', 'Abeokuta', 'Owerri', 'Jos', 'Akure', 'Ilorin', 'Uyo', 'Maiduguri', 'Sokoto', 'Katsina', 'Bauchi', 'Gombe', 'Yola'];
 const conditions = ['New', 'Like New', 'Used', 'Refurbished'] as const;
 
@@ -43,7 +45,9 @@ const normalizeLocationValue = (location: Listing['location'] | undefined) => {
 const createInitialFormValues = (listing?: Listing | null): ListingFormValues => ({
   title: listing?.title ?? '',
   description: listing?.description ?? '',
-  price: listing?.price?.toString() ?? '',
+  price: listing?.originalPrice ? String(listing.originalPrice) : listing?.price?.toString() ?? '',
+  discountEnabled: Boolean(listing?.discountEnabled ?? false),
+  discountPercentage: listing?.discountPercentage ? String(listing.discountPercentage) : '0',
   category: listing?.category ?? categories[0],
   location: normalizeLocationValue(listing?.location) || locations[0],
   images: listing?.images ?? [],
@@ -55,9 +59,7 @@ export function NewListingForm({ onCancel, onPublish, editingListing }: NewListi
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [publishStartTime, setPublishStartTime] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const submitAbortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     setForm(createInitialFormValues(editingListing));
@@ -66,8 +68,11 @@ export function NewListingForm({ onCancel, onPublish, editingListing }: NewListi
 
   const previewPrice = useMemo(() => {
     const parsed = Number(form.price);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed.toLocaleString() : '0';
-  }, [form.price]);
+    const discountValue = form.discountEnabled ? Number(form.discountPercentage || 0) : 0;
+    const validDiscount = Number.isFinite(parsed) && parsed > 0 && Number.isFinite(discountValue) && discountValue > 0 && discountValue <= 90;
+    const nextPrice = validDiscount ? parsed * (1 - discountValue / 100) : parsed;
+    return Number.isFinite(nextPrice) && nextPrice > 0 ? nextPrice.toLocaleString() : '0';
+  }, [form.price, form.discountEnabled, form.discountPercentage]);
 
   const handleFieldChange = (field: keyof ListingFormValues, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -126,42 +131,23 @@ export function NewListingForm({ onCancel, onPublish, editingListing }: NewListi
   };
 
   const handlePublish = async () => {
-    // Prevent multiple submissions
     if (isSubmitting) return;
 
     setIsSubmitting(true);
-    const startTime = Date.now();
-    setPublishStartTime(startTime);
     setSubmitError(null);
-    
-    console.log('[NewListingForm] Publishing listing...');
 
     try {
       const result = await Promise.resolve(onPublish?.(form));
-      const duration = Date.now() - startTime;
-      console.log(`[NewListingForm] Publish completed successfully in ${duration}ms`);
       if (result !== false) {
         resetForm();
       }
     } catch (error: any) {
-      const duration = Date.now() - startTime;
       const errorMessage = error?.response?.data?.error || error?.message || 'Failed to publish listing';
-      console.error(`[NewListingForm] Publish failed after ${duration}ms:`, error);
       setSubmitError(errorMessage);
     } finally {
       setIsSubmitting(false);
-      setPublishStartTime(null);
     }
   };
-
-  useEffect(() => {
-    // Cleanup abort controller on unmount
-    return () => {
-      if (submitAbortControllerRef.current) {
-        submitAbortControllerRef.current.abort();
-      }
-    };
-  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
@@ -198,7 +184,7 @@ export function NewListingForm({ onCancel, onPublish, editingListing }: NewListi
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="listing-price" className="mb-2 block text-sm font-medium text-slate-700">Price (NGN)</label>
+                  <label htmlFor="listing-price" className="mb-2 block text-sm font-medium text-slate-700">Original Price (NGN)</label>
                   <input
                     id="listing-price"
                     type="number"
@@ -225,6 +211,45 @@ export function NewListingForm({ onCancel, onPublish, editingListing }: NewListi
                     ))}
                   </div>
                 </div>
+              </div>
+
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <label className="text-sm font-medium text-slate-700">Add discount</label>
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, discountEnabled: !prev.discountEnabled, discountPercentage: prev.discountEnabled ? '0' : prev.discountPercentage || '10' }))}
+                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${form.discountEnabled ? 'bg-emerald-600' : 'bg-slate-300'}`}
+                    aria-label="Toggle discount"
+                  >
+                    <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition ${form.discountEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+
+                {form.discountEnabled && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="listing-discount-percentage" className="mb-2 block text-sm font-medium text-slate-700">Discount Percentage (%)</label>
+                      <input
+                        id="listing-discount-percentage"
+                        type="number"
+                        min="1"
+                        max="90"
+                        step="0.01"
+                        value={form.discountPercentage}
+                        onChange={e => handleFieldChange('discountPercentage', e.target.value)}
+                        placeholder="10"
+                        className="w-full rounded-3xl border border-slate-200 bg-white px-5 py-4 text-[16px] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <div className="w-full rounded-3xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                        <div className="text-xs uppercase tracking-[0.2em] text-emerald-700">Preview</div>
+                        <div className="mt-1 font-semibold">₦{previewPrice}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -329,7 +354,12 @@ export function NewListingForm({ onCancel, onPublish, editingListing }: NewListi
             </div>
             <div className="mt-5 space-y-3">
               <div className="text-lg font-semibold text-slate-900">{form.title || 'Your listing title'}</div>
-              <div className="text-2xl font-semibold text-slate-900">₦{previewPrice}</div>
+              <div className="space-y-1">
+                {form.discountEnabled && Number(form.discountPercentage || 0) > 0 && (
+                  <div className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-600">-{Number(form.discountPercentage).toFixed(0)}%</div>
+                )}
+                <div className="text-2xl font-semibold text-slate-900">₦{previewPrice}</div>
+              </div>
               <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.24em] text-slate-500">
                 <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2">{form.condition}</span>
                 <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2">{form.category}</span>
